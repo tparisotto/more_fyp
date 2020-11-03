@@ -1,6 +1,6 @@
-##Final Year Project
+## Final Year Project
 
-###Simultaneous Multi-View 3D Object Recognition and Grasp Pose Estimation
+### Simultaneous Multi-View 3D Object Recognition and Grasp Pose Estimation
 
 #### Usage
 Ensure you are running Python 3
