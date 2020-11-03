@@ -1,0 +1,6 @@
+open3d>=0.10.0.0
+numpy>=1.18.5
+pandas>=1.1.2
+matplotlib>=3.2.1
+scikit-image>=0.17.2
+tensorflow>=2.3.1
