@@ -11,7 +11,7 @@ from skimage.measure import shannon_entropy
 import matplotlib.pyplot as plt
 
 BASE_DIR = sys.path[0]
-DATA_PATH = BASE_DIR + '/../data/modelnet10'
+DATA_PATH = '/data/s3866033/ModelNet10'
 IMAGE_WIDTH = 640
 IMAGE_HEIGHT = 480
 N_VIEWS_W = 12
