@@ -11,7 +11,7 @@ from skimage.measure import shannon_entropy
 import matplotlib.pyplot as plt
 
 BASE_DIR = sys.path[0]
-DATA_PATH = '/data/s3866033/ModelNet10'
+DATA_PATH = '/../data/modelnet10'
 IMAGE_WIDTH = 640
 IMAGE_HEIGHT = 480
 N_VIEWS_W = 12
@@ -67,6 +67,10 @@ else:
 for label in labels:
     OBJECT_INDEX = 1
     files = os.listdir(os.path.join(DATA_PATH, label, "train"))
+    files.sort()
+    for file in files: # Removes file without .off extension
+        if not file.endswith('off'):
+            files.remove(file)
 
     for file in files:
         VIEW_INDEX = 0
