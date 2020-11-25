@@ -103,13 +103,22 @@ for label in labels:
 
         for filename in os.listdir(TMP_DIR):
             if "png" in filename:  # skip auto-generated .DS_Store
-                data_label.append(filename.split("_")[0])
-                data_y.append(float((filename.split("_")[-1]).split(".")[0]))
-                data_x.append(float((filename.split("_")[-3]).split(".")[0]))
-                data_code.append(int((filename.split("_")[1])))
-                data_index.append(int(OBJECT_INDEX))
-                image = plt.imread(os.path.join(TMP_DIR, filename))
-                entropy.append(shannon_entropy(image))
+                if "night_stand" in filename:
+                    data_label.append("night_stand")
+                    data_y.append(float((filename.split("_")[-1]).split(".")[0]))
+                    data_x.append(float((filename.split("_")[-3]).split(".")[0]))
+                    data_code.append(int((filename.split("_")[2])))
+                    data_index.append(int(OBJECT_INDEX))
+                    image = plt.imread(os.path.join(TMP_DIR, filename))
+                    entropy.append(shannon_entropy(image))
+                else:
+                    data_label.append(filename.split("_")[0])
+                    data_y.append(float((filename.split("_")[-1]).split(".")[0]))
+                    data_x.append(float((filename.split("_")[-3]).split(".")[0]))
+                    data_code.append(int((filename.split("_")[1])))
+                    data_index.append(int(OBJECT_INDEX))
+                    image = plt.imread(os.path.join(TMP_DIR, filename))
+                    entropy.append(shannon_entropy(image))
 
         data = pd.DataFrame({"label": data_label,
                              "obj_ind": data_index,
