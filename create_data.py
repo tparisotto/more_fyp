@@ -1,8 +1,6 @@
 import os
 import sys
-import time
 import shutil
-import argparse
 from open3d import *
 import open3d as o3d
 import numpy as np
@@ -20,11 +18,6 @@ VIEW_INDEX = 0
 FIRST_OBJECT = 1
 
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument("filename", help="select a file to generate the views from")
-# args = parser.parse_args()
-
-
 def normalize3d(vector):
     np_arr = np.asarray(vector)
     max_val = np.max(np_arr)
@@ -36,19 +29,21 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis = o3d.visualization.Visualizer()
     vis.create_window(width=640, height=480, visible=False)
     vis.add_geometry(pcd)
+    # Rotate back from last rotation
     R_0 = pcd.get_rotation_matrix_from_xyz(last_rot)
-    pcd.rotate(np.linalg.inv(R_0), center=(0, 0, 0))
+    pcd.rotate(np.linalg.inv(R_0), center=pcd.get_center())
+    # Then rotate to the next rotation
     R = pcd.get_rotation_matrix_from_xyz(rot_xyz)
-    pcd.rotate(R, center=(0, 0, 0))
+    pcd.rotate(R, center=pcd.get_center())
     vis.update_geometry(pcd)
     vis.poll_events()
     vis.update_renderer()
     vis.capture_depth_image(
-        "{}/tmp/{}_{}_x_{}_y_{}.png".format(BASE_DIR, label, VIEW_INDEX, round(np.rad2deg(rot_xyz[0])),
-                                            round(np.rad2deg(rot_xyz[1]))), False)
+        "{}/tmp/{}_{}_x_{}_y_{}.png".format(BASE_DIR, label, VIEW_INDEX, -round(np.rad2deg(rot_xyz[0])),
+                                            round(np.rad2deg(rot_xyz[2]))), False)
     # vis.capture_screen_image(
-    #     "{}/out/image/{}_{}_x_{}_y_{}.png".format(BASE_DIR, FILENAME, VIEW_INDEX, round(np.rad2deg(rot_xyz[0])),
-    #                                               round(np.rad2deg(rot_xyz[1]))), False)
+    #     "{}/out/image/{}_{}_x_{}_y_{}.png".format(BASE_DIR, FILENAME, VIEW_INDEX, -round(np.rad2deg(rot_xyz[0])),
+    #                                               round(np.rad2deg(rot_xyz[2]))), False)
     vis.destroy_window()
 
 
@@ -57,18 +52,16 @@ for cur in os.listdir(DATA_PATH):
     if os.path.isdir(os.path.join(DATA_PATH, cur)):
         labels.append(cur)
 
-
 TMP_DIR = os.path.join(BASE_DIR, "tmp")
 if os.path.exists(TMP_DIR):
-    for im in os.listdir(TMP_DIR):
-        os.remove(os.path.join(TMP_DIR, im))
+    shutil.rmtree(TMP_DIR)
 else:
     os.mkdir('./tmp')
 for label in labels:
     OBJECT_INDEX = 1
     files = os.listdir(os.path.join(DATA_PATH, label, "train"))
     files.sort()
-    for file in files: # Removes file without .off extension
+    for file in files:  # Removes file without .off extension
         if not file.endswith('off'):
             files.remove(file)
 
@@ -83,11 +76,10 @@ for label in labels:
         print(f"Current Object: {label}_{OBJECT_INDEX:04}")
 
         rotations = []
-        views_h = int(np.ceil(N_VIEWS_H / 2))
-        views_w = N_VIEWS_W
-        for j in range(-views_h + 1, views_h):
-            for i in range(views_w):
-                rotations.append((j * np.pi / views_h, i * np.pi / views_w, 0))
+        for j in range(0, N_VIEWS_H):
+            for i in range(N_VIEWS_W):
+                # Excluding 'rings' on 0 and 180 degrees since it would be the same projection but rotated
+                rotations.append((-(j + 1) * np.pi / (N_VIEWS_H + 1), 0, i * 2 * np.pi / N_VIEWS_W))
         last_rotation = (0, 0, 0)
         for rot in rotations:
             nonblocking_custom_capture(mesh, rot, last_rotation)
@@ -132,12 +124,9 @@ for label in labels:
         else:
             data.to_csv(os.path.join(BASE_DIR, "dataset_entropy.csv"), index=False, mode='a', header=False)
 
-
         for im in os.listdir(TMP_DIR):
             os.remove(os.path.join(TMP_DIR, im))
 
         OBJECT_INDEX = OBJECT_INDEX + 1
-        # print(data.sort_values(by=['entropy'], ascending=False, ignore_index=True))
-        # print(data.quantile(q=0.9)[2])  # 90% threshold of entropy
-os.rmdir(TMP_DIR)
 
+os.rmdir(TMP_DIR)
