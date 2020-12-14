@@ -5,28 +5,38 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import open3d as o3d
 
-from utility import int_to_1hot
+import utility
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Silence warnings
+# TODO: bind the indices/labels to the 3D voxelized data to train a model
+#
 
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
 BASE_DIR = sys.path[0]
-csv_filename = BASE_DIR + '/bed_0001_entropy.csv'
-mesh_filename = BASE_DIR + '/../data/modelnet10/bathtub/train/bathtub_0023.off'
-
-
-# TODO: Voxelization might be too heavy a load to be performed at runtime while training the net
-#   try to create a data set of pre-voxelized meshes to feed the network on
+VOXEL_DATAPATH = "/data/s3866033/voxel_data"
+NUM_VIEWS = 60
 
 
 
 # print(f"Tensorflow v{tf.__version__}")
 
-# data = pd.read_csv(csv_filename)
-# target_views = data[data['entropy'] > data.quantile(q=0.90)[2]].index
-# target_views = int_to_1hot(target_views, 60)
-# print(data[data['entropy'] > data.quantile(q=0.9)[2]])
+csv_filename = os.path.join(BASE_DIR, sys.argv[1])
+data = pd.read_csv(csv_filename)
+num_objects = data.shape[0] / NUM_VIEWS
+
+x = []
+y = []
+
+for i in range(5):
+    data_subset = data.iloc[60 * i:60 * (i + 1)]  # views are stored in order in the csv file
+    labels = utility.get_labels_from_object_views(data_subset)
+    voxel_data = np.load(os.path.join(VOXEL_DATAPATH, f"{data_subset['label'][0]}_{data_subset['obj_ind'][0]:04d}.npy"))
+    label_vecs = utility.view_vector(labels, NUM_VIEWS)
+    x.append(voxel_data)
+    y.append(label_vecs)
+
+    print(x,y)
+
 
 

@@ -96,21 +96,21 @@ for rot in rotations:
 
 data_label = []
 data_code = []
-data_x = []
-data_y = []
+data_theta = []
+data_phi = []
 entropy = []
 data_index = []
 
 for filename in os.listdir(os.path.join(BASE_DIR, "out/depth")):
     if "png" in filename:  # skip auto-generated .DS_Store
         data_label.append(filename.split("_")[0])
-        data_y.append(float((filename.split("_")[-1]).split(".")[0]))
-        data_x.append(float((filename.split("_")[-3]).split(".")[0]))
+        data_phi.append(float((filename.split("_")[-1]).split(".")[0]))
+        data_theta.append(float((filename.split("_")[-3]).split(".")[0]))
         image = plt.imread(os.path.join(BASE_DIR, "out/depth", filename))
         entropy.append(shannon_entropy(image))
 
 data = pd.DataFrame({"label": data_label,
-                     "rot_x": data_x,
-                     "rot_y": data_y,
+                     "theta": data_theta,
+                     "phi": data_phi,
                      "entropy": entropy})
 data.to_csv(os.path.join(BASE_DIR, f"{FILENAME}_entropy.csv"), index=False)
