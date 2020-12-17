@@ -1,8 +1,6 @@
 import os
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 import open3d as o3d
 
 VOXEL_SIZE = 0.02

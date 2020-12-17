@@ -1,5 +1,4 @@
-import os
-import sys
+
 import shutil
 from open3d import *
 import open3d as o3d
@@ -41,9 +40,6 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis.capture_depth_image(
         "{}/tmp/{}_{}_x_{}_y_{}.png".format(BASE_DIR, label, VIEW_INDEX, -round(np.rad2deg(rot_xyz[0])),
                                             round(np.rad2deg(rot_xyz[2]))), False)
-    # vis.capture_screen_image(
-    #     "{}/out/image/{}_{}_x_{}_y_{}.png".format(BASE_DIR, FILENAME, VIEW_INDEX, -round(np.rad2deg(rot_xyz[0])),
-    #                                               round(np.rad2deg(rot_xyz[2]))), False)
     vis.destroy_window()
 
 

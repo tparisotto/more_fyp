@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from skimage.measure import shannon_entropy
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
 parser.add_argument("filename", help="Select a file to generate the views from.")
 parser.add_argument("-c", "--csv", help="Save a csv file with computed entropy values of the views.", action='store_true')
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
