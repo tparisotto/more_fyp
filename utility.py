@@ -4,18 +4,18 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-
-
 def int_to_1hot(n, dim):
     vec = np.zeros(dim)
     vec[n] = 1
     return vec
+
 
 def view_vector(data, dim):
     res = np.zeros(dim)
     for n in data:
         res[n] = 1
     return res
+
 
 def extract_labels(data):
     data = data.rename(columns={'rot_x': 'theta', 'rot_y': 'phi'})
