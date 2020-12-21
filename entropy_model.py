@@ -11,6 +11,15 @@ from sklearn.metrics import accuracy_score
 import utility
 
 # TODO: Fix network inputs/outputs (having n-hot vectors as output) https://machinelearningmastery.com/multi-label-classification-with-deep-learning/
+'''
+http://aguo.us/writings/classify-modelnet.html
+Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
+
+Each shape is represented as a set of binary indicators corresponding to 3D voxels of a uniform 3D grid centered on 
+the shape. The indicators take value 1 if the corresponding 3D voxels are occupied by the 3D shape; and 0, 
+otherwise. Hence, each 3D shape is represented by a binary three-dimensional tensor. The grid size is set to 30 × 30 
+× 30 voxels. The shape size is normalized such that a cube of 24 × 24 × 24 voxels fully contains the shape, 
+and the remaining empty voxels serve for padding in all directions around the shape. '''
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
@@ -41,46 +50,21 @@ for i in range(num_objects):
     y.append(label_vecs)
 
 
-# train_dataset = tf.data.Dataset.from_tensor_slices((x[:5], y[:5]))
-# test_dataset = tf.data.Dataset.from_tensor_slices((x[5:], y[5:]))
+x_train, y_train = np.array(x[:5]), np.array(y[:5])
+x_test, y_test = np.array(x[5:]), np.array(y[5:])
 
+model = keras.models.Sequential()
+model.add(layers.Reshape((50, 50, 50, 1)))
+model.add(layers.Conv3D(16, 6, strides=2, activation='relu'))
+model.add(layers.Conv3D(64, 5, strides=2, activation='relu'))
+model.add(layers.Flatten())
+model.add(layers.Dense(360, activation='relu'))
+model.add(layers.Dense(60, activation='sigmoid'))
 
-def get_model(input_shape, output_shape):
-    model = keras.models.Sequential()
-    model.add(layers.Flatten())
-    model.add(layers.Dense(160, input_dim=input_shape, kernel_initializer='he_uniform', activation='relu'))
-    model.add(layers.Dense(output_shape, activation='sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer='adam')
-    return model
+model.compile(optimizer='adam', loss='binary_crossentropy')
 
+# print(x_train.shape)
+# print(y_train.shape)
 
-def evaluate_model(X, y):
-    res = list()
-    input_shape, output_shape = X.shape[1:], y.shape[1:]
-    # define evaluation procedure
-    cv = RepeatedKFold(n_splits=10, n_repeats=3, random_state=1)
-    # enumerate folds
-    for train_ix, test_ix in cv.split(X):
-        # prepare data
-        X_train, X_test = X[train_ix], X[test_ix]
-        y_train, y_test = y[train_ix], y[test_ix]
-        # define model
-        model = get_model(input_shape, output_shape)
-        # fit model
-        model.fit(X_train, y_train, verbose=0, epochs=100)
-        # make a prediction on the test set
-        yhat = model.predict(X_test)
-        # round probabilities to class labels
-        yhat = yhat.round()
-        # calculate accuracy
-        acc = accuracy_score(y_test, yhat)
-        # store result
-        print('>%.3f' % acc)
-        res.append(acc)
-    return res
-
-
-# evaluate model
-results = evaluate_model(x, y)
-# summarize performance
-print('Accuracy: %.3f (%.3f)' % (np.mean(results), np.std(results)))
+model.fit(x_train, y_train, batch_size=5, epochs=5)
+print(model.predict(x_test)>0.5)
