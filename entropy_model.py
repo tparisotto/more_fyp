@@ -55,7 +55,7 @@ model.add(layers.Flatten())
 model.add(layers.Dense(360, activation='relu'))
 model.add(layers.Dense(60, activation='sigmoid'))
 
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=jaccard_score)
+model.compile(optimizer='adam', loss='binary_crossentropy')
 
 # print(x_train.shape)
 # print(y_train.shape)
