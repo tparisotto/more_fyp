@@ -2,6 +2,8 @@ import numpy as np
 import scipy.signal as sig
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
+import shutil
 
 
 def int_to_1hot(n, dim):
@@ -15,6 +17,13 @@ def view_vector(data, dim):
     for n in data:
         res[n] = 1
     return res
+
+
+def make_dir(path):
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    else:
+        os.mkdir(path)
 
 
 def extract_labels(data):

@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+from datetime import datetime
 import tensorflow as tf
 from sklearn.model_selection import RepeatedKFold
 from tensorflow import keras
@@ -23,6 +24,7 @@ and the remaining empty voxels serve for padding in all directions around the sh
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
+timestamp = datetime.now().strftime('%d_%m_%H%M')
 parser = argparse.ArgumentParser()
 parser.add_argument("datapath")
 parser.add_argument("csvpath")
@@ -66,5 +68,8 @@ model.compile(optimizer='adam', loss='binary_crossentropy')
 # print(x_train.shape)
 # print(y_train.shape)
 
-model.fit(x_train, y_train, batch_size=5, epochs=5)
-print(model.predict(x_test)>0.5)
+model.fit(x_train, y_train, batch_size=1, epochs=20)
+
+utility.make_dir('./models')
+model.save(f'./models/{timestamp}.h5')
+print(f'[INFO] Model saved to models/{timestamp}.h5')
