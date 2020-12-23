@@ -72,8 +72,8 @@ model.compile(optimizer='adam', loss='binary_crossentropy')
 # print(x_train.shape)
 # print(y_train.shape)
 
-model.fit(x_train, y_train, batch_size=4, epochs=5)
-
+model.fit(x_train, y_train, batch_size=1, epochs=5)
+model.evaluate(x_test, y_test)
 utility.make_dir('./models')
 model.save(f'./models/{timestamp}.h5')
 print(f'[INFO] Model saved to models/{timestamp}.h5')
