@@ -6,11 +6,12 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
-import pandas as pd
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import jaccard_score
+
 import utility
 
-# TODO: Fix network inputs/outputs (having n-hot vectors as output) https://machinelearningmastery.com/multi-label-classification-with-deep-learning/
+# TODO: because there is no single definitive measure for multi-label classification performance, several should be
+#   reported. At the moment only jaccard is.
 '''
 http://aguo.us/writings/classify-modelnet.html
 Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
@@ -22,40 +23,27 @@ otherwise. Hence, each 3D shape is represented by a binary three-dimensional ten
 and the remaining empty voxels serve for padding in all directions around the shape. '''
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
-timestamp = datetime.now().strftime('%d_%m_%H%M')
 parser = argparse.ArgumentParser()
-parser.add_argument("datapath")
-parser.add_argument("csvpath")
+parser.add_argument('-b', '--batch_size', type=int, default=8)
+parser.add_argument('-e', '--epochs', type=int, default=5)
+parser.add_argument('-s', '--split', type=float, default=0.9)
+parser.add_argument('-m', '--save_model', type=bool, default=True)
 args = parser.parse_args()
+TIMESTAMP = datetime.now().strftime('%d_%m_%H%M')
 BASE_DIR = sys.path[0]
-VOXEL_DATAPATH = args.datapath  # "./voxel_data"
+SPLIT = args.split
 
-NUM_VIEWS = 60
-SPLIT = 0.9
+
 
 print(f"Tensorflow v{tf.__version__}")
 
-csv_filename = args.csvpath
-data = pd.read_csv(csv_filename, engine='python')
-num_objects = int(data.shape[0] / NUM_VIEWS)
-
 x = np.load('x_data.npy')
 y = np.load('y_data.npy')
+num_objects = x.shape[0]
 
-# # TODO: this cycle needs to be pre-computed
-# for i in range(num_objects):
-#     if i % 100 == 0:
-#         print(f'[DEBUG] Now processing {i}/{num_objects}')
-#     data_subset = data.iloc[NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
-#     labels = utility.get_labels_from_object_views(data_subset)
-#     voxel_data = np.load(os.path.join(VOXEL_DATAPATH,
-#                                       f"{list(data_subset['label'])[0]}_{list(data_subset['obj_ind'])[0]:04d}.npy"))
-#     label_vecs = utility.view_vector(labels, NUM_VIEWS)
-#     x.append(voxel_data)
-#     y.append(label_vecs)
-#
-
-n_train = int(num_objects*SPLIT)
+if SPLIT < 0.0 or SPLIT > 1.0:
+    raise argparse.ArgumentTypeError(f"split={SPLIT} not in range [0.0, 1.0]")
+n_train = int(num_objects * SPLIT)
 x_train, y_train = x[:n_train], y[:n_train]
 x_test, y_test = x[n_train:], y[n_train:]
 
@@ -67,13 +55,16 @@ model.add(layers.Flatten())
 model.add(layers.Dense(360, activation='relu'))
 model.add(layers.Dense(60, activation='sigmoid'))
 
-model.compile(optimizer='adam', loss='binary_crossentropy')
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=jaccard_score)
 
 # print(x_train.shape)
 # print(y_train.shape)
 
-model.fit(x_train, y_train, batch_size=1, epochs=5)
-model.evaluate(x_test, y_test)
-utility.make_dir('./models')
-model.save(f'./models/{timestamp}.h5')
-print(f'[INFO] Model saved to models/{timestamp}.h5')
+model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
+results = model.evaluate(x_test, y_test)
+print("[INFO] Test Loss, Test Accuracy: ", results)
+
+if args.save_model:
+    utility.make_dir('./models')
+    model.save(f'./models/{TIMESTAMP}.h5')
+    print(f'[INFO] Model saved to models/{TIMESTAMP}.h5')
