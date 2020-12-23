@@ -36,13 +36,14 @@ NUM_VIEWS = 60
 print(f"Tensorflow v{tf.__version__}")
 
 csv_filename = args.csvpath
-data = pd.read_csv(csv_filename)
-num_objects = 9  # data.shape[0] / NUM_VIEWS
+data = pd.read_csv(csv_filename, engine='python')
+num_objects = int(data.shape[0] / NUM_VIEWS)
 
 x = []
 y = []
 
 for i in range(num_objects):
+    if i%10==0: print(f'[DEBUG] Now processing {i}/{num_objects}')
     data_subset = data.iloc[NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
     labels = utility.get_labels_from_object_views(data_subset)
     voxel_data = np.load(os.path.join(VOXEL_DATAPATH,
@@ -68,7 +69,7 @@ model.compile(optimizer='adam', loss='binary_crossentropy')
 # print(x_train.shape)
 # print(y_train.shape)
 
-model.fit(x_train, y_train, batch_size=1, epochs=20)
+model.fit(x_train, y_train, batch_size=8, epochs=5)
 
 utility.make_dir('./models')
 model.save(f'./models/{timestamp}.h5')
