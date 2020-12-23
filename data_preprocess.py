@@ -18,7 +18,7 @@ num_objects = int(data.shape[0] / NUM_VIEWS)
 
 x = []
 y = []
-
+print(f"[INFO] Processing {num_objects} objects into numpy arrays...")
 for i in trange(num_objects):
     data_subset = data.iloc[NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
     labels = utility.get_labels_from_object_views(data_subset)
@@ -30,4 +30,4 @@ for i in trange(num_objects):
 
 np.save('x_data.npy', x)
 np.save('y_data.npy', y)
-print("[INFO] Numpy data successfully stored in current directory.")
+print("[INFO] Features (x_data.npy) and Labels (y_data.npy) successfully stored in current directory.")

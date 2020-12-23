@@ -39,25 +39,25 @@ csv_filename = args.csvpath
 data = pd.read_csv(csv_filename, engine='python')
 num_objects = int(data.shape[0] / NUM_VIEWS)
 
-x = []
-y = []
+x = np.load('x_data.npy')
+y = np.load('y_data.npy')
 
-# TODO: this cycle needs to be pre-computed
-for i in range(num_objects):
-    if i % 100 == 0:
-        print(f'[DEBUG] Now processing {i}/{num_objects}')
-    data_subset = data.iloc[NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
-    labels = utility.get_labels_from_object_views(data_subset)
-    voxel_data = np.load(os.path.join(VOXEL_DATAPATH,
-                                      f"{list(data_subset['label'])[0]}_{list(data_subset['obj_ind'])[0]:04d}.npy"))
-    label_vecs = utility.view_vector(labels, NUM_VIEWS)
-    x.append(voxel_data)
-    y.append(label_vecs)
-
+# # TODO: this cycle needs to be pre-computed
+# for i in range(num_objects):
+#     if i % 100 == 0:
+#         print(f'[DEBUG] Now processing {i}/{num_objects}')
+#     data_subset = data.iloc[NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
+#     labels = utility.get_labels_from_object_views(data_subset)
+#     voxel_data = np.load(os.path.join(VOXEL_DATAPATH,
+#                                       f"{list(data_subset['label'])[0]}_{list(data_subset['obj_ind'])[0]:04d}.npy"))
+#     label_vecs = utility.view_vector(labels, NUM_VIEWS)
+#     x.append(voxel_data)
+#     y.append(label_vecs)
+#
 
 n_train = int(num_objects*SPLIT)
-x_train, y_train = np.array(x[:n_train]), np.array(y[:n_train])
-x_test, y_test = np.array(x[n_train:]), np.array(y[n_train:])
+x_train, y_train = x[:n_train], y[:n_train]
+x_test, y_test = x[n_train:], y[n_train:]
 
 model = keras.models.Sequential()
 model.add(layers.Reshape((50, 50, 50, 1)))
