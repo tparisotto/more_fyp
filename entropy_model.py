@@ -59,6 +59,7 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics=jaccard_scor
 
 # print(x_train.shape)
 # print(y_train.shape)
+print(args)
 
 model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
 results = model.evaluate(x_test, y_test)
