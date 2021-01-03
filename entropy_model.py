@@ -57,13 +57,13 @@ x_train, y_train = x[:n_train], y[:n_train]
 x_test, y_test = x[n_train:], y[n_train:]
 
 model = keras.models.Sequential()
-model.add(layers.Conv3D(32, (3, 3), activation='relu', padding='same', input_shape=x_train.shape[1:]))
-model.add(layers.Conv3D(32, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', padding='same', input_shape=x_train.shape[1:]))
+model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 model.add(layers.Dropout(0.25))
 
-model.add(layers.Conv3D(64, (3, 3), activation='relu', padding='same'))
-model.add(layers.Conv3D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', padding='same'))
+model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 model.add(layers.Dropout(0.25))
 
