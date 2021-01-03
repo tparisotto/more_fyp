@@ -18,8 +18,8 @@ Notes: The Xu and Todorovic paper describes how we should discretize the ModelNe
 
 Each shape is represented as a set of binary indicators corresponding to 3D voxels of a uniform 3D grid centered on 
 the shape. The indicators take value 1 if the corresponding 3D voxels are occupied by the 3D shape; and 0, 
-otherwise. Hence, each 3D shape is represented by a binary three-dimensional tensor. The grid size is set to 30 × 30 
-× 30 voxels. The shape size is normalized such that a cube of 24 × 24 × 24 voxels fully contains the shape, 
+otherwise. Hence, each 3D shape is represented by a binary three-dimensional tensor. The grid size is set to 30 x 30 
+x 30 voxels. The shape size is normalized such that a cube of 24 x 24 x 24 voxels fully contains the shape, 
 and the remaining empty voxels serve for padding in all directions around the shape. '''
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
