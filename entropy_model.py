@@ -29,9 +29,20 @@ parser.add_argument('-e', '--epochs', type=int, default=5)
 parser.add_argument('-s', '--split', type=float, default=0.9)
 parser.add_argument('-m', '--save_model', type=bool, default=True)
 args = parser.parse_args()
+
 TIMESTAMP = datetime.now().strftime('%d_%m_%H%M')
 BASE_DIR = sys.path[0]
 SPLIT = args.split
+METRICS = [
+      keras.metrics.TruePositives(name='tp'),
+      keras.metrics.FalsePositives(name='fp'),
+      keras.metrics.TrueNegatives(name='tn'),
+      keras.metrics.FalseNegatives(name='fn'),
+      keras.metrics.BinaryAccuracy(name='accuracy'),
+      keras.metrics.Precision(name='precision'),
+      keras.metrics.Recall(name='recall'),
+      keras.metrics.AUC(name='auc'),
+]
 
 print(f"Tensorflow v{tf.__version__}\n")
 
@@ -46,20 +57,27 @@ x_train, y_train = x[:n_train], y[:n_train]
 x_test, y_test = x[n_train:], y[n_train:]
 
 model = keras.models.Sequential()
-model.add(layers.Reshape((50, 50, 50, 1)))
-model.add(layers.Conv3D(16, 6, strides=2, activation='relu'))
-model.add(layers.Conv3D(64, 5, strides=2, activation='relu'))
+model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=x_train.shape[1:]))
+model.add(layers.Conv2D(32, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(pool_size=(2, 2)))
+model.add(layers.Dropout(0.25))
+
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
+model.add(layers.MaxPooling2D(pool_size=(2, 2)))
+model.add(layers.Dropout(0.25))
+
 model.add(layers.Flatten())
-model.add(layers.Dense(360, activation='relu'))
+model.add(layers.Dense(512, activation='relu'))
+model.add(layers.Dropout(0.5))
 model.add(layers.Dense(60, activation='sigmoid'))
 
-model.compile(optimizer='adam', loss='binary_crossentropy')
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
 
-print('[INFO] x_train.shape=', x_train.shape)
 # print(y_train.shape)
 # print(args)
 
-# model.build(input_shape=(50,50,50,1))
+model.build(input_shape=x_train.shape[1:])
 print(model.summary())
 # model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
 # results = model.evaluate(x_test, y_test)
