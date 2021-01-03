@@ -19,10 +19,10 @@ def view_vector(data, dim):
     return res
 
 
-def make_dir(path):
-    if os.path.exists(path):
+def make_dir(path, delete=False):
+    if os.path.exists(path) and delete is True:
         shutil.rmtree(path)
-    else:
+    if not os.path.exists(path):
         os.mkdir(path)
 
 

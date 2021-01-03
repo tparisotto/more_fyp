@@ -33,7 +33,7 @@ TIMESTAMP = datetime.now().strftime('%d_%m_%H%M')
 BASE_DIR = sys.path[0]
 SPLIT = args.split
 
-print(f"Tensorflow v{tf.__version__}")
+print(f"Tensorflow v{tf.__version__}\n")
 
 x = np.load('/data/s3866033/fyp/x_data.npy')
 y = np.load('/data/s3866033/fyp/y_data.npy')
@@ -59,9 +59,10 @@ model.compile(optimizer='adam', loss='binary_crossentropy')
 # print(y_train.shape)
 print(args)
 
-model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
-results = model.evaluate(x_test, y_test)
-print("[INFO] Test Loss, Test Accuracy: ", results)
+print(model.summary())
+# model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
+# results = model.evaluate(x_test, y_test)
+# print("[INFO] Test Loss: ", results)
 
 if args.save_model:
     utility.make_dir('./models')
