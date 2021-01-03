@@ -80,8 +80,8 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
 
 model.build(input_shape=x_train.shape[1:])
 print(model.summary())
-# model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
-# results = model.evaluate(x_test, y_test)
+model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
+results = model.evaluate(x_test, y_test)
 # print("[INFO] Test Loss: ", results)
 
 if args.save_model:
