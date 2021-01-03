@@ -11,7 +11,7 @@ from sklearn.metrics import jaccard_score
 import utility
 
 # TODO: because there is no single definitive measure for multi-label classification performance, several should be
-#   reported. At the moment only jaccard is.
+#   reported. At the moment only jaccard is. ###Changed Text###.
 '''
 http://aguo.us/writings/classify-modelnet.html
 Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
