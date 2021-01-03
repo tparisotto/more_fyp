@@ -48,7 +48,6 @@ print(f"Tensorflow v{tf.__version__}\n")
 
 x = np.load('/data/s3866033/fyp/x_data.npy')
 y = np.load('/data/s3866033/fyp/y_data.npy')
-x.reshape(-1, 50, 50, 50, 1)
 num_objects = x.shape[0]
 
 if SPLIT < 0.0 or SPLIT > 1.0:
@@ -58,7 +57,8 @@ x_train, y_train = x[:n_train], y[:n_train]
 x_test, y_test = x[n_train:], y[n_train:]
 
 model = keras.models.Sequential()
-model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', padding='same', input_shape=x_train.shape[1:]))
+model.add(layers.Reshape((50, 50, 50, 1), input_shape=(50, 50, 50)))
+model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', padding='same'))
 model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', padding='same'))
 model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 model.add(layers.Dropout(0.25))
