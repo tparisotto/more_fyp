@@ -33,8 +33,6 @@ TIMESTAMP = datetime.now().strftime('%d_%m_%H%M')
 BASE_DIR = sys.path[0]
 SPLIT = args.split
 
-
-
 print(f"Tensorflow v{tf.__version__}")
 
 x = np.load('/data/s3866033/fyp/x_data.npy')
