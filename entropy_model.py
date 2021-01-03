@@ -11,7 +11,7 @@ from sklearn.metrics import jaccard_score
 import utility
 
 # TODO: because there is no single definitive measure for multi-label classification performance, several should be
-#   reported. At the moment only jaccard is. ###Changed Text###.
+#   reported. At the moment only jaccard is.
 '''
 http://aguo.us/writings/classify-modelnet.html
 Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
@@ -37,8 +37,8 @@ SPLIT = args.split
 
 print(f"Tensorflow v{tf.__version__}")
 
-x = np.load('x_data.npy')
-y = np.load('y_data.npy')
+x = np.load('/data/s3866033/fyp/x_data.npy')
+y = np.load('/data/s3866033/fyp/y_data.npy')
 num_objects = x.shape[0]
 
 if SPLIT < 0.0 or SPLIT > 1.0:
