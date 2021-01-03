@@ -55,10 +55,11 @@ model.add(layers.Dense(60, activation='sigmoid'))
 
 model.compile(optimizer='adam', loss='binary_crossentropy')
 
-# print(x_train.shape)
+print('[INFO] x_train.shape=', x_train.shape)
 # print(y_train.shape)
 # print(args)
-model.build(input_shape=(50,50,50,1))
+
+# model.build(input_shape=(50,50,50,1))
 print(model.summary())
 # model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
 # results = model.evaluate(x_test, y_test)
