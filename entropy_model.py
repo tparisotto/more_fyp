@@ -48,6 +48,7 @@ print(f"Tensorflow v{tf.__version__}\n")
 
 x = np.load('/data/s3866033/fyp/x_data.npy')
 y = np.load('/data/s3866033/fyp/y_data.npy')
+x.reshape(-1, 50, 50, 50, 1)
 num_objects = x.shape[0]
 
 if SPLIT < 0.0 or SPLIT > 1.0:
