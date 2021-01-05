@@ -34,8 +34,7 @@ args = parser.parse_args()
 
 X_DATAPATH = '/data/s3866033/fyp/x_data.npy'
 Y_DATAPATH = '/data/s3866033/fyp/y_data.npy'
-TIMESTAMP = datetime.now().strftime('%d_%m_%H%M')
-TIMESTAMP_2 = datetime.now().strftime('%d-%m-%H%M')
+TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 BASE_DIR = sys.path[0]
 SPLIT = args.split
 METRICS = [
@@ -54,6 +53,10 @@ def load_data(x_data, y_data):
     x = np.load(x_data)
     y = np.load(y_data)
     num_objects = x.shape[0]
+
+    xy = list(zip(x, y))
+    np.random.shuffle(xy)
+    x, y = zip(*xy)
 
     if SPLIT < 0.0 or SPLIT > 1.0:
         raise argparse.ArgumentTypeError(f"split={SPLIT} not in range [0.0, 1.0]")
@@ -87,7 +90,7 @@ def compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=False):
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
     model.build(input_shape=x_train.shape[1:])
     print(model.summary())
-    history = model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs)
+    history = model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs, validation_split=0.2)
     results = model.evaluate(x_test, y_test)
     if save_model:
         utility.make_dir('./models')
@@ -103,8 +106,8 @@ def main():
     if args.save_history:
         utility.make_dir('./history')
         hist_df = pd.DataFrame(history.history)
-        hist_df.to_csv(os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv"))
-        print(f'[INFO] History saved to history/history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv')
+        hist_df.to_csv(os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]}.csv"))
+        print(f"[INFO] History saved to history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]}.csv")
 
 
 if __name__ == '__main__':
