@@ -104,6 +104,7 @@ def main():
         utility.make_dir('./history')
         hist_df = pd.DataFrame(history.history)
         hist_df.to_csv(os.path.join(BASE_DIR, f"history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv"))
+        print(f'[INFO] History saved to history/history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv')
 
 
 if __name__ == '__main__':
