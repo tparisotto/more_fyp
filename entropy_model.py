@@ -53,10 +53,13 @@ def load_data(x_data, y_data):
     x = np.load(x_data)
     y = np.load(y_data)
     num_objects = x.shape[0]
+    input_shape = x.shape[1:]
 
     xy = list(zip(x, y))
     np.random.shuffle(xy)
     x, y = zip(*xy)
+    x = np.array(x)
+    y = np.array(y)
 
     if SPLIT < 0.0 or SPLIT > 1.0:
         raise argparse.ArgumentTypeError(f"split={SPLIT} not in range [0.0, 1.0]")
