@@ -102,8 +102,8 @@ def main():
     history, results = compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=args.save_model)
     if args.save_history:
         utility.make_dir('./history')
-        history = pd.DataFrame(history)
-        history.to_csv(os.path.join(BASE_DIR, f"history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv"))
+        hist_df = pd.DataFrame(history.history)
+        hist_df.to_csv(os.path.join(BASE_DIR, f"history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv"))
 
 
 if __name__ == '__main__':
