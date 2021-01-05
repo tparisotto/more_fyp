@@ -13,8 +13,8 @@ from tensorflow.keras import layers
 
 print(f"Tensorflow v{tf.__version__}\n")
 
-# TODO: because there is no single definitive measure for multi-label classification performance, several should be
-#   reported.
+# TODO: The recall is the most important information since it defines how many of the positions it predicted are correct.
+#    try to get the best recall.
 '''
 http://aguo.us/writings/classify-modelnet.html
 Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
@@ -72,18 +72,18 @@ def load_data(x_data, y_data):
 def generate_cnn():
     model = keras.models.Sequential()
     model.add(layers.Reshape((50, 50, 50, 1), input_shape=(50, 50, 50)))
-    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.001), padding='same'))
-    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.001), padding='same'))
+    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.01), padding='same'))
+    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.01), padding='same'))
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
-    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.001), padding='same'))
-    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.001), padding='same'))
+    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.01), padding='same'))
+    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.01), padding='same'))
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
     model.add(layers.Flatten())
-    model.add(layers.Dense(512, activation='relu', kernel_regularizer=keras.regularizers.l2(0.001)))
+    model.add(layers.Dense(512, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01)))
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(60, activation='sigmoid'))
     return model
@@ -93,7 +93,7 @@ def compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=False):
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
     model.build(input_shape=x_train.shape[1:])
     print(model.summary())
-    history = model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs, validation_split=0.2)
+    history = model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs, validation_split=0.1)
     results = model.evaluate(x_test, y_test)
     if save_model:
         utility.make_dir('./models')
