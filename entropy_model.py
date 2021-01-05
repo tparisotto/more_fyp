@@ -80,7 +80,7 @@ def generate_cnn():
     model.add(layers.Dropout(0.25))
 
     model.add(layers.Flatten())
-    model.add(layers.Dense(512, activation='relu'), kernel_regularizer=keras.regularizers.l2(0.001))
+    model.add(layers.Dense(512, activation='relu', kernel_regularizer=keras.regularizers.l2(0.001)))
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(60, activation='sigmoid'))
     return model
