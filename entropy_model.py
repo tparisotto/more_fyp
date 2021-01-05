@@ -66,18 +66,18 @@ def load_data(x_data, y_data):
 def generate_cnn():
     model = keras.models.Sequential()
     model.add(layers.Reshape((50, 50, 50, 1), input_shape=(50, 50, 50)))
-    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', padding='same'))
-    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', padding='same'))
+    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.001), padding='same'))
+    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.001), padding='same'))
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
-    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', padding='same'))
-    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', padding='same'))
+    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.001), padding='same'))
+    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.001), padding='same'))
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
     model.add(layers.Flatten())
-    model.add(layers.Dense(512, activation='relu'))
+    model.add(layers.Dense(512, activation='relu'), kernel_regularizer=keras.regularizers.l2(0.001))
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(60, activation='sigmoid'))
     return model
@@ -103,7 +103,7 @@ def main():
     if args.save_history:
         utility.make_dir('./history')
         hist_df = pd.DataFrame(history.history)
-        hist_df.to_csv(os.path.join(BASE_DIR, f"history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv"))
+        hist_df.to_csv(os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv"))
         print(f'[INFO] History saved to history/history_epochs_{args.epochs}_time_{TIMESTAMP_2}.csv')
 
 
