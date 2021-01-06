@@ -15,8 +15,9 @@ y_data = np.load(Y_DATAPATH)
 model = generate_cnn()
 model.load_weights('models/05_01_1721.h5')
 
-ypred = model.predict(x_data[344])
+# ypred = model.predict(x_data[344])
 y = y_data[344]
+x = x_data[344]
 
-print(y)
-print(ypred)
+print(y.shape)
+print(x.shape)
