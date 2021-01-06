@@ -109,8 +109,8 @@ def main():
     if args.save_history:
         utility.make_dir('./history')
         hist_df = pd.DataFrame(history.history)
-        hist_df.to_csv(os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]}.csv"))
-        print(f"[INFO] History saved to history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]}.csv")
+        hist_df.to_csv(os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv"))
+        print(f"[INFO] History saved to history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv")
 
 
 if __name__ == '__main__':
