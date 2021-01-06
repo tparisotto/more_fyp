@@ -19,5 +19,5 @@ y = y_data[344]
 x = x_data[344]
 x = np.reshape(x, (1,50,50,50,1))
 ypred = model.predict(x, batch_size=1)
-print(y.shape)
-print(x.shape)
+print(ypred)
+print(y)
