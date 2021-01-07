@@ -16,8 +16,8 @@ from kerastuner.tuners import Hyperband
 
 print(f"Tensorflow v{tf.__version__}\n")
 
-# TODO: The recall is the most important information since it defines how many of the positions it predicted are correct.
-#    try to get the best recall.
+# TODO: Hyperparameters tuning should give better architecture, but on --partition=gpu it doesn't work
+#   wait for response by peregrine support.
 '''
 http://aguo.us/writings/classify-modelnet.html
 Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
@@ -31,12 +31,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-b', '--batch_size', type=int, default=8)
 parser.add_argument('-e', '--epochs', type=int, default=5)
 parser.add_argument('-s', '--split', type=float, default=0.9)
-parser.add_argument('--save_model', type=bool, default=True)
-parser.add_argument('--save_history', type=bool, default=True)
+parser.add_argument('--mylaptop', dest='mylaptop', action='store_true', default=False)
+parser.add_argument('--save_model', dest='save_model', action='store_true', default=False)
+parser.add_argument('--save_history', dest='save_history', action='store_true', default=False)
 args = parser.parse_args()
 
-X_DATAPATH = '/data/s3866033/fyp/x_data.npy'
-Y_DATAPATH = '/data/s3866033/fyp/y_data.npy'
+if args.mylaptop is True:
+    X_DATAPATH = '../data/x_data.npy'
+    Y_DATAPATH = '../data/y_data.npy'
+else:
+    X_DATAPATH = '/data/s3866033/fyp/x_data.npy'
+    Y_DATAPATH = '/data/s3866033/fyp/y_data.npy'
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 BASE_DIR = sys.path[0]
 SPLIT = args.split

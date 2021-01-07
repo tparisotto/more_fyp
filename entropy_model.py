@@ -14,7 +14,9 @@ from tensorflow.keras import layers
 print(f"Tensorflow v{tf.__version__}\n")
 
 # TODO: The recall is the most important information since it defines how many of the positions it predicted are correct.
-#    try to get the best recall.
+#    try to get the best recall by changing the structure of the network.
+#   It might be necessary to change the format of the voxel data, or even recalibrate the entropies we use to determine
+#   the point of views.
 '''
 http://aguo.us/writings/classify-modelnet.html
 Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
