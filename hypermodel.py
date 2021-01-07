@@ -11,6 +11,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import kerastuner as kt
 from kerastuner.tuners import Hyperband
 
 print(f"Tensorflow v{tf.__version__}\n")
@@ -120,7 +121,7 @@ class ClearTrainingOutput(tf.keras.callbacks.Callback):
 
 def main():
     x_train, y_train, x_test, y_test = load_data(x_data=X_DATAPATH, y_data=Y_DATAPATH)
-    tuner = Hyperband(generate_cnn, objective='val_recall', max_epochs=20, factor=3)
+    tuner = Hyperband(generate_cnn, objective=kt.Objective("val_recall", direction="max"), max_epochs=20, factor=3)
     tuner.search(x_train, y_train, epochs=10, validation_data=(x_test,y_test), callbacks=[ClearTrainingOutput()])
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     print(f"[INFO] Hyperparameters: {best_hps}")
