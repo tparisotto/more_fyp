@@ -75,26 +75,25 @@ def load_data(x_data, y_data):
 def generate_cnn(hp):
     model = keras.models.Sequential()
     model.add(layers.Reshape((50, 50, 50, 1), input_shape=(50, 50, 50)))
-    lr = hp.Choice('lr', values=[0.1, 1e-2, 1e-3])
     cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=64, step=8)
-    model.add(layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(lr),
+    model.add(layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu',
                             padding='same'))
-    model.add(layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(lr),
+    model.add(layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu',
                             padding='same'))
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
     cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=64, step=8)
-    model.add(layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(lr),
+    model.add(layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu',
                             padding='same'))
-    model.add(layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(lr),
+    model.add(layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu',
                             padding='same'))
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
     dense_units = hp.Int('dense_units', min_value=128, max_value=512, step=128)
     model.add(layers.Flatten())
-    model.add(layers.Dense(512, activation='relu', kernel_regularizer=keras.regularizers.l2(lr)))
+    model.add(layers.Dense(512, activation='relu'))
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(60, activation='sigmoid'))
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
@@ -114,15 +113,10 @@ def compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=False):
     return history, results
 
 
-class ClearTrainingOutput(tf.keras.callbacks.Callback):
-    def on_train_end(*args, **kwargs):
-        IPython.display.clear_output(wait=True)
-
-
 def main():
     x_train, y_train, x_test, y_test = load_data(x_data=X_DATAPATH, y_data=Y_DATAPATH)
     tuner = Hyperband(generate_cnn, objective=kt.Objective("val_recall", direction="max"), max_epochs=20, factor=3)
-    tuner.search(x_train, y_train, epochs=10, validation_data=(x_test,y_test), callbacks=[ClearTrainingOutput()])
+    tuner.search(x_train, y_train, epochs=10, validation_data=(x_test,y_test))
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     print(f"[INFO] Hyperparameters: {best_hps}")
 
