@@ -16,8 +16,7 @@ from kerastuner.tuners import Hyperband
 
 print(f"Tensorflow v{tf.__version__}\n")
 
-# TODO: Hyperparameters tuning should give better architecture, but on --partition=gpu it doesn't work
-#   wait for response by peregrine support.
+# TODO: Test last model, remember to delete data on /data before running, otherwise it aborts.
 '''
 http://aguo.us/writings/classify-modelnet.html
 Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
@@ -80,7 +79,7 @@ def load_data(x_data, y_data):
 def generate_cnn(hp):
     model = keras.models.Sequential()
     model.add(layers.Reshape((50, 50, 50, 1), input_shape=(50, 50, 50)))
-    cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=64, step=8)
+    cnn1_filters = hp.Int('cnn1_filters', min_value=40, max_value=80, step=8)
     model.add(layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu',
                             padding='same'))
     model.add(layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu',
@@ -88,7 +87,7 @@ def generate_cnn(hp):
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
-    cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=64, step=8)
+    cnn2_filters = hp.Int('cnn2_filters', min_value=40, max_value=80, step=8)
     model.add(layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu',
                             padding='same'))
     model.add(layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu',
@@ -98,7 +97,7 @@ def generate_cnn(hp):
 
     dense_units = hp.Int('dense_units', min_value=128, max_value=512, step=128)
     model.add(layers.Flatten())
-    model.add(layers.Dense(512, activation='relu'))
+    model.add(layers.Dense(dense_units, activation='relu'))
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(60, activation='sigmoid'))
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
@@ -123,7 +122,7 @@ def main():
     tuner = Hyperband(generate_cnn, objective=kt.Objective("val_recall", direction="max"), max_epochs=20, factor=3, directory='../../../../data/s3866033/fyp', project_name='hyperband_optimization')
     tuner.search(x_train, y_train, epochs=10, validation_data=(x_test,y_test))
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
-    print(f"[INFO] Hyperparameters: {best_hps}")
+    # print(f"[INFO] Hyperparameters: {best_hps}")
 
     model = tuner.hypermodel.build(best_hps)
     history, results = compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=args.save_model)
