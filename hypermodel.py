@@ -120,7 +120,7 @@ def compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=False):
 
 def main():
     x_train, y_train, x_test, y_test = load_data(x_data=X_DATAPATH, y_data=Y_DATAPATH)
-    tuner = Hyperband(generate_cnn, objective=kt.Objective("val_recall", direction="max"), max_epochs=20, factor=3)
+    tuner = Hyperband(generate_cnn, objective=kt.Objective("val_recall", direction="max"), max_epochs=20, factor=3, directory='../../../../data/s3866033/fyp', project_name='hyperband_optimization')
     tuner.search(x_train, y_train, epochs=10, validation_data=(x_test,y_test))
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
     print(f"[INFO] Hyperparameters: {best_hps}")
