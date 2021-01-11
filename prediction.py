@@ -13,7 +13,7 @@ Y_DATAPATH = '/data/s3866033/fyp/y_data.npy'
 x_data = np.load(X_DATAPATH)
 y_data = np.load(Y_DATAPATH)
 model = generate_cnn()
-model.load_weights('models/05_01_1721.h5')
+model.load_weights('models/09_01_1844.h5')
 
 y = y_data[344]
 x = x_data[344]
