@@ -50,6 +50,7 @@ def balance_set(data, min_size, max_size):
 
 
 y_out = balance_set(y_data, MIN_LEN, MAX_LEN)
+y_out = np.delete(y_out, -1, 1)
 x_out = np.zeros(shape=(y_out.shape[0], 50, 50, 50))
 print("[INFO] Binding x_data to y_data...")
 for i in tqdm(range(y_out.shape[0])):
