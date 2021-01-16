@@ -27,6 +27,8 @@ otherwise. Hence, each 3D shape is represented by a binary three-dimensional ten
 The shape size is normalized such that a cube of 50x 50 x 50 voxels fully contains the shape. '''
 
 parser = argparse.ArgumentParser()
+parser.add_argument('-x', '--x_data', type=str, required=True)
+parser.add_argument('-y', '--y_data', type=str, required=True)
 parser.add_argument('-b', '--batch_size', type=int, default=8)
 parser.add_argument('-e', '--epochs', type=int, default=5)
 parser.add_argument('-s', '--split', type=float, default=0.9)
@@ -34,8 +36,10 @@ parser.add_argument('--save_model', type=bool, default=True)
 parser.add_argument('--save_history', type=bool, default=True)
 args = parser.parse_args()
 
-X_DATAPATH = '/data/s3866033/fyp/x_data.npy'
-Y_DATAPATH = '/data/s3866033/fyp/y_data.npy'
+# X_DATAPATH = '/data/s3866033/fyp/x_data.npy'
+# Y_DATAPATH = '/data/s3866033/fyp/y_data.npy'
+X_DATAPATH = args.x_data
+Y_DATAPATH = args.y_data
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 BASE_DIR = sys.path[0]
 SPLIT = args.split
@@ -74,18 +78,18 @@ def load_data(x_data, y_data):
 def generate_cnn():
     model = keras.models.Sequential()
     model.add(layers.Reshape((50, 50, 50, 1), input_shape=(50, 50, 50)))
-    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.01), padding='same'))
-    model.add(layers.Conv3D(32, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.01), padding='same'))
+    model.add(layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same'))
+    model.add(layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same'))
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
-    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.01), padding='same'))
-    model.add(layers.Conv3D(64, (3, 3, 3), activation='relu', kernel_regularizer=keras.regularizers.l2(0.01), padding='same'))
+    model.add(layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same'))
+    model.add(layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same'))
     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
     model.add(layers.Dropout(0.25))
 
     model.add(layers.Flatten())
-    model.add(layers.Dense(512, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01)))
+    model.add(layers.Dense(384, activation='relu'))
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(60, activation='sigmoid'))
     return model
