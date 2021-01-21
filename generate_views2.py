@@ -22,9 +22,7 @@ import argparse
 from open3d import *
 import open3d as o3d
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-from skimage.measure import shannon_entropy
+from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
 parser.add_argument("data", help="Select a directory to generate the views from.")
@@ -74,7 +72,6 @@ else:
     os.makedirs(os.path.join(OUT_DIR, "depth"))
 
 
-
 def normalize3d(vector):
     np_arr = np.asarray(vector)
     max_val = np.max(np_arr)
@@ -98,7 +95,8 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis.poll_events()
     vis.update_renderer()
     vis.capture_depth_image(
-        "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index, ViewData.theta, ViewData.phi, ViewData.view_index), False)
+        "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
+                                                          ViewData.theta, ViewData.phi, ViewData.view_index), False)
     vis.destroy_window()
 
 
@@ -115,14 +113,16 @@ for label in labels:
             files.remove(filename)
 
     for filename in files:
+        start = time()
         ViewData.obj_path = os.path.join(DATA_PATH, label, "train", filename)
         ViewData.obj_filename = filename
         ViewData.obj_index = filename.split(".")[0].split("_")[-1]
-        ViewData.obj_label = filename.split(".")[0].replace("_"+ViewData.obj_index, '')
+        ViewData.obj_label = filename.split(".")[0].replace("_" + ViewData.obj_index, '')
         ViewData.view_index = 0
         if args.verbose:
             print(f"[INFO] Current object: {ViewData.obj_label}_{ViewData.obj_index}")
-            print(f"[DEBUG] ViewData:\n [objpath: {ViewData.obj_path},\n filename: {ViewData.obj_filename},\n label: {ViewData.obj_label},\n index: {ViewData.obj_index}]")
+            print(
+                f"[DEBUG] ViewData:\n [objpath: {ViewData.obj_path},\n filename: {ViewData.obj_filename},\n label: {ViewData.obj_label},\n index: {ViewData.obj_index}]")
         mesh = io.read_triangle_mesh(ViewData.obj_path)
         mesh.vertices = normalize3d(mesh.vertices)
         mesh.compute_vertex_normals()
@@ -139,3 +139,6 @@ for label in labels:
             if args.verbose:
                 print(f"[INFO] Elaborating view {ViewData.view_index}/{N_VIEWS_W * N_VIEWS_H}...")
             last_rotation = rot
+
+        end = time()
+        print(f"Time for single file: {end-start}")
