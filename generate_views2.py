@@ -49,7 +49,7 @@ args = parser.parse_args()
 
 BASE_DIR = sys.path[0]
 OUT_DIR = os.path.join(BASE_DIR, "out")
-DATA_PATH = os.path.join(BASE_DIR, args.data)
+DATA_PATH = os.path.normpath(os.path.join(BASE_DIR, args.data))
 IMAGE_WIDTH = 640
 IMAGE_HEIGHT = 480
 N_VIEWS_W = args.horizontal_split
@@ -103,7 +103,7 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis.poll_events()
     vis.update_renderer()
     vis.capture_depth_image(
-        "{}/depth/{}_{}_theta_{}_phi_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index, ViewData.theta, ViewData.phi), False)
+        "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index, ViewData.theta, ViewData.phi, ViewData.view_index), False)
     vis.destroy_window()
 
 
@@ -113,7 +113,6 @@ for cur in os.listdir(DATA_PATH):
         labels.append(cur)
 
 for label in labels:
-    ViewData.obj_label = label
     files = os.listdir(os.path.join(DATA_PATH, label, "train"))
     files.sort()
     for filename in files:  # Removes file without .off extension
@@ -124,10 +123,11 @@ for label in labels:
         ViewData.obj_path = os.path.join(DATA_PATH, label, "train", filename)
         ViewData.obj_filename = filename
         ViewData.obj_index = filename.split(".")[0].split("_")[-1]
-        ViewData.obj_label = filename.replace("_"+ViewData.obj_index, '')
+        ViewData.obj_label = filename.split(".")[0].replace("_"+ViewData.obj_index, '')
+        ViewData.view_index = 0
         if args.verbose:
             print(f"[INFO] Current object: {ViewData.obj_label}_{ViewData.obj_index}")
-            print(f"[DEBUG] #1 ViewData:\n [objpath: {ViewData.obj_path},\n filename: {ViewData.obj_filename},\n label: {ViewData.obj_label},\n index: {ViewData.obj_index}]")
+            print(f"[DEBUG] ViewData:\n [objpath: {ViewData.obj_path},\n filename: {ViewData.obj_filename},\n label: {ViewData.obj_label},\n index: {ViewData.obj_index}]")
         mesh = io.read_triangle_mesh(ViewData.obj_path)
         mesh.vertices = normalize3d(mesh.vertices)
         mesh.compute_vertex_normals()
