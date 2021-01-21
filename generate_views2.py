@@ -65,9 +65,9 @@ class ViewData:
     theta = 0
 
 
-if os.path.exists(OUT_DIR):
-    shutil.rmtree(OUT_DIR)
-    os.makedirs(os.path.join(OUT_DIR, "depth"))
+if os.path.exists(os.path.normpath(os.path.join(OUT_DIR,"depth"))):
+    print("[Error] Folder already exists.")
+    exit(0)
 else:
     os.makedirs(os.path.join(OUT_DIR, "depth"))
 
