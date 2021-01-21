@@ -28,6 +28,7 @@ from skimage.measure import shannon_entropy
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
 parser.add_argument("data", help="Select a directory to generate the views from.")
+parser.add_argument("--out", help="Select a desired output directory.", default="./out")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
 parser.add_argument("-x", "--horizontal_split", help="Number of views from a single ring. Each ring is divided in x "
                                                      "splits so each viewpoint is at an angle of multiple of 360/x. "
@@ -48,17 +49,12 @@ parser.add_argument("-y", "--vertical_split", help="Number of horizontal rings. 
 args = parser.parse_args()
 
 BASE_DIR = sys.path[0]
-OUT_DIR = os.path.join(BASE_DIR, "out")
+OUT_DIR = os.path.normpath(os.path.join(BASE_DIR, args.out))
 DATA_PATH = os.path.normpath(os.path.join(BASE_DIR, args.data))
 IMAGE_WIDTH = 640
 IMAGE_HEIGHT = 480
 N_VIEWS_W = args.horizontal_split
 N_VIEWS_H = args.vertical_split
-# FILENAME = (args.filename.split("/")[-1]).split(".")[0]
-
-
-filenames = ['../data/modelnet10/bed/train/bed_0001.off', '../data/modelnet10/bed/train/bed_0002.off',
-             '../data/modelnet10/bed/train/bed_0032.off']
 
 
 class ViewData:
@@ -74,10 +70,9 @@ class ViewData:
 if os.path.exists(OUT_DIR):
     shutil.rmtree(OUT_DIR)
     os.makedirs(os.path.join(OUT_DIR, "depth"))
-    os.makedirs(os.path.join(OUT_DIR, "image"))
 else:
     os.makedirs(os.path.join(OUT_DIR, "depth"))
-    os.makedirs(os.path.join(OUT_DIR, "image"))
+
 
 
 def normalize3d(vector):
