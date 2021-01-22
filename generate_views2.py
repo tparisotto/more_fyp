@@ -141,4 +141,4 @@ for label in labels:
             last_rotation = rot
 
         end = time()
-        print(f"Time for single file: {end-start}")
+        print(f"[INFO] Time to elaborate file {filename}: {end-start}")
