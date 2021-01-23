@@ -29,7 +29,7 @@ METRICS = [
 EPOCHS = 10
 BATCH_SIZE = 4
 
-labels_dict = {'baththub': utility.int_to_1hot(0, 10),
+labels_dict = {'bathtub': utility.int_to_1hot(0, 10),
               'bed': utility.int_to_1hot(1, 10),
               'chair': utility.int_to_1hot(2, 10),
               'desk': utility.int_to_1hot(3, 10),
