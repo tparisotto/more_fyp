@@ -1,10 +1,17 @@
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
+import pandas as pd
 import numpy as np
 import utility
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+
+
+# TODO: Missing validation/test set, find a way to split.
+
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("data", help="Directory where the single views are stored.")
@@ -26,8 +33,13 @@ METRICS = [
     keras.metrics.Recall(name='recall'),
     keras.metrics.AUC(name='auc'),
 ]
-EPOCHS = 10
-BATCH_SIZE = 4
+CALLBACKS = [
+    # tf.keras.callbacks.EarlyStopping(patience=2),
+    tf.keras.callbacks.ModelCheckpoint(filepath='model_checkpoint.h5', monitor='loss', mode='min', save_best_only=True, save_freq=1),
+    tf.keras.callbacks.TensorBoard(log_dir='./logs'),
+]
+EPOCHS = 3
+BATCH_SIZE = 32
 
 labels_dict = {'bathtub': utility.int_to_1hot(0, 10),
               'bed': utility.int_to_1hot(1, 10),
@@ -94,7 +106,9 @@ def main():
     model = generate_cnn()
     num_batches = int(NUM_OBJECTS / BATCH_SIZE)
     data_gen = dataset_generator()
-    history = model.fit_generator(data_gen, steps_per_epoch=num_batches, epochs=EPOCHS)
+    history = model.fit(data_gen, steps_per_epoch=num_batches, epochs=EPOCHS, callbacks=CALLBACKS)
+    hist_df = pd.DataFrame(history.history)
+    hist_df.to_csv(os.path.join(f"class-view_training_history.csv"))
 
 
 if __name__ == '__main__':
