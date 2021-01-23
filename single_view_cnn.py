@@ -91,7 +91,7 @@ def main():
     model = generate_cnn()
     num_batches = int(NUM_OBJECTS / BATCH_SIZE)
     data_gen = dataset_generator()
-    model.fit_generator(data_gen, steps_per_epoch=num_batches, epochs=EPOCHS)
+    history = model.fit_generator(data_gen, steps_per_epoch=num_batches, epochs=EPOCHS)
 
 
 if __name__ == '__main__':
