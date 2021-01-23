@@ -49,7 +49,10 @@ def data_loader():
                                                target_size=(240, 320),
                                                interpolation='nearest')
         x = keras.preprocessing.image.img_to_array(x)
-        label_class = labels_dict[FILES[i].split("_")[0]]
+        label_class = FILES[i].split("_")[0]
+        if label_class == 'night':
+            label_class = 'night_stand' # Quick fix for label parsing
+        label_class = labels_dict[label_class]
         label_view = utility.int_to_1hot(int(FILES[i].split("_")[-1].split(".")[0]), 60)
         yield x, (label_class, label_view)
 

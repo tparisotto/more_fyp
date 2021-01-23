@@ -92,11 +92,11 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis.poll_events()
     vis.update_renderer()
     vis.capture_depth_image(
-        "{}/out/depth/{}_{}_theta_{}_phi_{}.png".format(BASE_DIR, FILENAME, SAVE_INDEX, -round(np.rad2deg(rot_xyz[0])),
-                                                  round(np.rad2deg(rot_xyz[2]))), False)
+        "{}/depth/{}_theta_{}_phi_{}_vc_{}.png".format(BASE_DIR, FILENAME, -round(np.rad2deg(rot_xyz[0])),
+                                                  round(np.rad2deg(rot_xyz[2]))), SAVE_INDEX, False)
     vis.capture_screen_image(
-        "{}/out/image/{}_{}_theta_{}_phi_{}.png".format(BASE_DIR, FILENAME, SAVE_INDEX, -round(np.rad2deg(rot_xyz[0])),
-                                                  round(np.rad2deg(rot_xyz[2]))), False)
+        "{}/out/image/{}_{}_theta_{}_phi_{}_vc_{}.png".format(BASE_DIR, FILENAME, -round(np.rad2deg(rot_xyz[0])),
+                                                  round(np.rad2deg(rot_xyz[2]))), SAVE_INDEX, False)
     vis.destroy_window()
 
 
