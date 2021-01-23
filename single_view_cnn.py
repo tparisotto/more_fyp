@@ -27,7 +27,7 @@ METRICS = [
     keras.metrics.AUC(name='auc'),
 ]
 EPOCHS = 10
-BATCH_SIZE = 32
+BATCH_SIZE = 4
 
 labels_dict = {'baththub': utility.int_to_1hot(0, 10),
               'bed': utility.int_to_1hot(1, 10),
@@ -66,28 +66,21 @@ def dataset_generator():
 
 def generate_cnn():
     inputs = keras.Input(shape=(240, 320, 3))
-    vgg_class = keras.applications.VGG16(include_top=False,
+    vgg = keras.applications.VGG16(include_top=False,
                                          weights='imagenet',
                                          input_tensor=inputs,
                                          input_shape=(240, 320, 3))
-    vgg_view = keras.applications.VGG19(include_top=False,
-                                        weights=None,
-                                        input_tensor=inputs,
-                                        input_shape=(240, 320, 3))
     preprocessed = keras.applications.vgg16.preprocess_input(inputs)
-    x_class = vgg_class(preprocessed)
-    x_view = vgg_view(preprocessed)
-    x_class = layers.Flatten()(x_class)
-    x_view = layers.Flatten()(x_view)
-    out_class = layers.Dense(10, activation='softmax')(x_class)
-    out_view = layers.Dense(60, activation='softmax')(x_view)
+    x = vgg(preprocessed)
+    x = layers.Flatten()(x)
+    out_class = layers.Dense(10, activation='softmax', name="class")(x)
+    out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
-    # keras.utils.plot_model(model, "multi-output-cnn.png", show_layer_names=True, show_shapes=True)
     model.summary()
-    losses = {"dense": "categorical_crossentropy",
-              "dense_1": "categorical_crossentropy"}
+    losses = {"class": "categorical_crossentropy",
+              "view": "categorical_crossentropy"}
     model.compile(optimizer=keras.optimizers.Adam(lr=0.001), loss=losses, metrics=METRICS[4:])
-    keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
+    # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
 
