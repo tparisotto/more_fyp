@@ -1,6 +1,7 @@
 import os
 import argparse
 import numpy as np
+import utility
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -15,41 +16,90 @@ for filename in FILES:  # Removes file without .png extension
     if not filename.endswith('png'):
         FILES.remove(filename)
 NUM_OBJECTS = len(FILES)
+METRICS = [
+    keras.metrics.TruePositives(name='tp'),
+    keras.metrics.FalsePositives(name='fp'),
+    keras.metrics.TrueNegatives(name='tn'),
+    keras.metrics.FalseNegatives(name='fn'),
+    keras.metrics.BinaryAccuracy(name='accuracy'),
+    keras.metrics.Precision(name='precision'),
+    keras.metrics.Recall(name='recall'),
+    keras.metrics.AUC(name='auc'),
+]
+EPOCHS = 10
+BATCH_SIZE = 32
 
-labels_int = {'baththub': 0,
-              'bed': 1,
-              'chair': 2,
-              'desk': 3,
-              'dresser': 4,
-              'monitor': 5,
-              'night_stand': 6,
-              'sofa': 7,
-              'table': 8,
-              'toilet': 9}
+labels_dict = {'baththub': utility.int_to_1hot(0, 10),
+              'bed': utility.int_to_1hot(1, 10),
+              'chair': utility.int_to_1hot(2, 10),
+              'desk': utility.int_to_1hot(3, 10),
+              'dresser': utility.int_to_1hot(4, 10),
+              'monitor': utility.int_to_1hot(5, 10),
+              'night_stand': utility.int_to_1hot(6, 10),
+              'sofa': utility.int_to_1hot(7, 10),
+              'table': utility.int_to_1hot(8, 10),
+              'toilet': utility.int_to_1hot(9, 10)}
 
 
 def data_loader():
     for i in range(NUM_OBJECTS):
         file_path = os.path.join(DATA_PATH, FILES[i])
         x = keras.preprocessing.image.load_img(file_path,
-                                               color_mode='grayscale',
+                                               color_mode='rgb',
                                                target_size=(240, 320),
                                                interpolation='nearest')
         x = keras.preprocessing.image.img_to_array(x)
-        label_class = labels_int[FILES[i].split("_")[0]]
-        label_view = int(FILES[i].split("_")[-1].split(".")[0])
+        label_class = labels_dict[FILES[i].split("_")[0]]
+        label_view = utility.int_to_1hot(int(FILES[i].split("_")[-1].split(".")[0]), 60)
         yield x, (label_class, label_view)
 
 
-def main():
+def dataset_generator():
     dataset = tf.data.Dataset.from_generator(data_loader,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([240, 320]),
-                                                            (tf.TensorShape([1]), tf.TensorShape([1]))))
+                                             output_shapes=(tf.TensorShape([240, 320, 3]),
+                                                            (tf.TensorShape([10]), tf.TensorShape([60]))))
+    dataset = dataset.repeat(EPOCHS)
+    dataset = dataset.batch(BATCH_SIZE)
+    return dataset
 
-    iterator = dataset.make_one_shot_iterator()
-    x, (y1, y2) = iterator.get_next()
-    print(np.shape(x), np.shape(y1), np.shape(y2))
+
+def generate_cnn():
+    inputs = keras.Input(shape=(240, 320, 3))
+    vgg_class = keras.applications.VGG16(include_top=False,
+                                         weights='imagenet',
+                                         input_tensor=inputs,
+                                         input_shape=(240, 320, 3))
+    vgg_view = keras.applications.VGG19(include_top=False,
+                                        weights=None,
+                                        input_tensor=inputs,
+                                        input_shape=(240, 320, 3))
+    preprocessed = keras.applications.vgg16.preprocess_input(inputs)
+    x_class = vgg_class(preprocessed)
+    x_view = vgg_view(preprocessed)
+    x_class = layers.Flatten()(x_class)
+    x_view = layers.Flatten()(x_view)
+    out_class = layers.Dense(10, activation='softmax')(x_class)
+    out_view = layers.Dense(60, activation='softmax')(x_view)
+    model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
+    # keras.utils.plot_model(model, "multi-output-cnn.png", show_layer_names=True, show_shapes=True)
+    model.summary()
+    losses = {"dense": "categorical_crossentropy",
+              "dense_1": "categorical_crossentropy"}
+    model.compile(optimizer=keras.optimizers.Adam(lr=0.001), loss=losses, metrics=METRICS[4:])
+    keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
+    return model
+
+
+def main():
+    # for idx, (x, (y1, y2)) in enumerate(dataset):
+    #     print(idx, np.shape(x), y1, y2)
+
+    model = generate_cnn()
+    num_batches = int(NUM_OBJECTS / BATCH_SIZE)
+    data_gen = dataset_generator()
+    model.fit_generator(data_gen, steps_per_epoch=num_batches, epochs=EPOCHS)
+
 
 if __name__ == '__main__':
     main()
