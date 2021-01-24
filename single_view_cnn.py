@@ -9,7 +9,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-# TODO: Missing validation/test set, find a way to split.
+# TODO: Split with validation/train set
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -35,23 +35,16 @@ METRICS = [
 ]
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=2),
-    tf.keras.callbacks.ModelCheckpoint(filepath='model_checkpoint.h5', monitor='loss', mode='min', save_best_only=True,
-                                       save_freq=1),
+    tf.keras.callbacks.ModelCheckpoint(filepath='models/model_{epoch:02d}_{class_accuracy:.2f}_{view_accuracy:.2f}.h5',
+                                       monitor='loss',
+                                       mode='min',
+                                       save_best_only=True,
+                                       save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
 ]
 EPOCHS = 3
 BATCH_SIZE = 32
 
-# labels_dict = {'bathtub': utility.int_to_1hot(0, 10),
-#               'bed': utility.int_to_1hot(1, 10),
-#               'chair': utility.int_to_1hot(2, 10),
-#               'desk': utility.int_to_1hot(3, 10),
-#               'dresser': utility.int_to_1hot(4, 10),
-#               'monitor': utility.int_to_1hot(5, 10),
-#               'night_stand': utility.int_to_1hot(6, 10),
-#               'sofa': utility.int_to_1hot(7, 10),
-#               'table': utility.int_to_1hot(8, 10),
-#               'toilet': utility.int_to_1hot(9, 10)}
 labels_dict = utility.get_label_dict()
 
 
@@ -102,9 +95,6 @@ def generate_cnn():
 
 
 def main():
-    # for idx, (x, (y1, y2)) in enumerate(dataset):
-    #     print(idx, np.shape(x), y1, y2)
-
     model = generate_cnn()
     num_batches = int(NUM_OBJECTS / BATCH_SIZE)
     data_gen = dataset_generator()
