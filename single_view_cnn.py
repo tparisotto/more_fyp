@@ -42,7 +42,7 @@ CALLBACKS = [
                                        save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
 ]
-EPOCHS = 3
+EPOCHS = 10
 BATCH_SIZE = 32
 
 labels_dict = utility.get_label_dict()
