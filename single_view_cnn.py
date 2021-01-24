@@ -1,4 +1,5 @@
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
@@ -7,7 +8,6 @@ import utility
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-
 
 # TODO: Missing validation/test set, find a way to split.
 
@@ -35,22 +35,24 @@ METRICS = [
 ]
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=2),
-    tf.keras.callbacks.ModelCheckpoint(filepath='model_checkpoint.h5', monitor='loss', mode='min', save_best_only=True, save_freq=1),
+    tf.keras.callbacks.ModelCheckpoint(filepath='model_checkpoint.h5', monitor='loss', mode='min', save_best_only=True,
+                                       save_freq=1),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
 ]
 EPOCHS = 3
 BATCH_SIZE = 32
 
-labels_dict = {'bathtub': utility.int_to_1hot(0, 10),
-              'bed': utility.int_to_1hot(1, 10),
-              'chair': utility.int_to_1hot(2, 10),
-              'desk': utility.int_to_1hot(3, 10),
-              'dresser': utility.int_to_1hot(4, 10),
-              'monitor': utility.int_to_1hot(5, 10),
-              'night_stand': utility.int_to_1hot(6, 10),
-              'sofa': utility.int_to_1hot(7, 10),
-              'table': utility.int_to_1hot(8, 10),
-              'toilet': utility.int_to_1hot(9, 10)}
+# labels_dict = {'bathtub': utility.int_to_1hot(0, 10),
+#               'bed': utility.int_to_1hot(1, 10),
+#               'chair': utility.int_to_1hot(2, 10),
+#               'desk': utility.int_to_1hot(3, 10),
+#               'dresser': utility.int_to_1hot(4, 10),
+#               'monitor': utility.int_to_1hot(5, 10),
+#               'night_stand': utility.int_to_1hot(6, 10),
+#               'sofa': utility.int_to_1hot(7, 10),
+#               'table': utility.int_to_1hot(8, 10),
+#               'toilet': utility.int_to_1hot(9, 10)}
+labels_dict = utility.get_label_dict()
 
 
 def data_loader():
@@ -63,8 +65,8 @@ def data_loader():
         x = keras.preprocessing.image.img_to_array(x)
         label_class = FILES[i].split("_")[0]
         if label_class == 'night':
-            label_class = 'night_stand' # Quick fix for label parsing
-        label_class = labels_dict[label_class]
+            label_class = 'night_stand'  # Quick fix for label parsing
+        label_class = utility.int_to_1hot(labels_dict[label_class], 10)
         label_view = utility.int_to_1hot(int(FILES[i].split("_")[-1].split(".")[0]), 60)
         yield x, (label_class, label_view)
 
@@ -82,9 +84,9 @@ def dataset_generator():
 def generate_cnn():
     inputs = keras.Input(shape=(240, 320, 3))
     vgg = keras.applications.VGG16(include_top=False,
-                                         weights='imagenet',
-                                         input_tensor=inputs,
-                                         input_shape=(240, 320, 3))
+                                   weights='imagenet',
+                                   input_tensor=inputs,
+                                   input_shape=(240, 320, 3))
     preprocessed = keras.applications.vgg16.preprocess_input(inputs)
     x = vgg(preprocessed)
     x = layers.Flatten()(x)

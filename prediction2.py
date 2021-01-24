@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
+import utility
 
 parser = argparse.ArgumentParser()
 parser.add_argument("picture")
@@ -34,9 +35,10 @@ x = x.reshape((1,240,320, 3))
 
 
 print("[INFO] Computing prediction...")
+int2lab = utility.get_label_dict(inverse=True)
 y1pred, y2pred = model.predict(x)
 y1out, y2out = np.argmax(y1pred), np.argmax(y2pred)
-print(y1out)
+print(int2lab[y1out])
 print(y2out)
 # print(yout)
 # print(f"Accuracy: {1 - np.linalg.norm(y - yout) / 60}")

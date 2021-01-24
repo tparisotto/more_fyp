@@ -90,3 +90,31 @@ def get_labels_from_object_views(data):
         subset_idx.append(label2idx[lab])
     subset_idx.sort()
     return subset_idx
+
+
+def get_label_dict(inverse=False):
+    label2int = {'bathtub': 0,
+                 'bed': 1,
+                 'chair': 2,
+                 'desk': 3,
+                 'dresser': 4,
+                 'monitor': 5,
+                 'night_stand': 6,
+                 'sofa': 7,
+                 'table': 8,
+                 'toilet': 9}
+
+    int2label = {0: 'bathtub',
+                 1: 'bed',
+                 2: 'chair',
+                 3: 'desk',
+                 4: 'dresser',
+                 5: 'monitor',
+                 6: 'night_stand',
+                 7: 'sofa',
+                 8: 'table',
+                 9: 'toilet'}
+    if inverse:
+        return int2label
+    else:
+        return label2int
