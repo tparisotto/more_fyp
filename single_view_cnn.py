@@ -104,7 +104,6 @@ def dataset_generator_train():
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
                                              output_shapes=(tf.TensorShape([240, 320, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
-    dataset = dataset.repeat(EPOCHS)
     dataset = dataset.batch(BATCH_SIZE)
     return dataset
 
@@ -144,6 +143,7 @@ def generate_cnn(app="efficientnet"):
 
     x = net(preprocessed)
     x = layers.Flatten()(x)
+    x = layers.Dropout(0.25)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
@@ -160,7 +160,13 @@ def main():
     num_batches = int(NUM_OBJECTS_TRAIN / BATCH_SIZE)
     train_data_gen = dataset_generator_train()
     test_data_gen = data_loader_test()
-    history = model.fit(train_data_gen, steps_per_epoch=num_batches, epochs=EPOCHS, callbacks=CALLBACKS, validation_data=test_data_gen)
+    history = model.fit(train_data_gen,
+                        shuffle=True,
+                        steps_per_epoch=num_batches,
+                        batch_size=BATCH_SIZE,
+                        epochs=EPOCHS,
+                        callbacks=CALLBACKS,
+                        validation_data=test_data_gen)
     hist_df = pd.DataFrame(history.history)
     hist_df.to_csv(os.path.join(f"class-view_training_history.csv"))
 
