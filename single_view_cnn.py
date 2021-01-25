@@ -147,9 +147,9 @@ def generate_cnn(app="efficientnet"):
 
     elif app == "light":
         x = keras.layers.Conv2D(32, 5, 3, activation='relu')(inputs)
-        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+        x = keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
         x = keras.layers.Conv2D(32, 5, 3, activation='relu')(x)
-        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+        x = keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
 
     x = layers.Flatten()(x)
     x = layers.Dropout(0.25)(x)
@@ -159,7 +159,7 @@ def generate_cnn(app="efficientnet"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer=keras.optimizers.Adam(lr=1e-4), loss=losses, metrics=METRICS[4:])
+    model.compile(optimizer=keras.optimizers.Adam(lr=1e-3), loss=losses, metrics=METRICS[4:])
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
