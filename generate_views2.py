@@ -26,6 +26,7 @@ from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
 parser.add_argument("data", help="Select a directory to generate the views from.")
+parser.add_argument("--set", help="Subdirectory: 'train' or 'test'.", default='train')
 parser.add_argument("--out", help="Select a desired output directory.", default="./out")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
 parser.add_argument("-x", "--horizontal_split", help="Number of views from a single ring. Each ring is divided in x "
@@ -106,7 +107,7 @@ for cur in os.listdir(DATA_PATH):
         labels.append(cur)
 
 for label in labels:
-    files = os.listdir(os.path.join(DATA_PATH, label, "train"))
+    files = os.listdir(os.path.join(DATA_PATH, label, args.set))
     files.sort()
     for filename in files:  # Removes file without .off extension
         if not filename.endswith('off'):
@@ -114,7 +115,7 @@ for label in labels:
 
     for filename in files:
         start = time()
-        ViewData.obj_path = os.path.join(DATA_PATH, label, "train", filename)
+        ViewData.obj_path = os.path.join(DATA_PATH, label, args.set, filename)
         ViewData.obj_filename = filename
         ViewData.obj_index = filename.split(".")[0].split("_")[-1]
         ViewData.obj_label = filename.split(".")[0].replace("_" + ViewData.obj_index, '')
