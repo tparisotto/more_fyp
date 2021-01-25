@@ -161,7 +161,7 @@ def generate_cnn(app="efficientnet"):
         x = keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
 
     x = layers.Flatten()(x)
-    x = layers.Dropout(0.25)(x)
+    x = layers.Dropout(0.5)(x)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
