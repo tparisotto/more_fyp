@@ -2,6 +2,7 @@ import numpy as np
 import scipy.signal as sig
 import os
 import shutil
+import datetime
 
 
 def int_to_1hot(n, dim):
@@ -116,3 +117,8 @@ def get_label_dict(inverse=False):
         return int2label
     else:
         return label2int
+
+
+def get_datastamp():
+    time = datetime.datetime.now()
+    return time.strftime("%d-%b-%H%M%S")

@@ -1,5 +1,4 @@
 import os
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
@@ -15,14 +14,23 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("data", help="Directory where the single views are stored.")
+parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--epochs", type=int, default=3)
+parser.add_argument("-a", "--architecture", default="vgg", choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2'])
+parser.add_argument("-o", "--out", default="./")
 args = parser.parse_args()
 
+TIMESTAMP = utility.get_datastamp()
+MODEL_DIR = os.path.join(args.out, f"{args.architecture}-{TIMESTAMP}")
 DATA_PATH = args.data
 FILES = os.listdir(DATA_PATH)
 for filename in FILES:  # Removes file without .png extension
     if not filename.endswith('png'):
         FILES.remove(filename)
 NUM_OBJECTS = len(FILES)
+
+os.makedirs(MODEL_DIR)
+
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
     keras.metrics.FalsePositives(name='fp'),
@@ -35,20 +43,20 @@ METRICS = [
 ]
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=2),
-    tf.keras.callbacks.ModelCheckpoint(filepath='models/model_{epoch:02d}_{class_accuracy:.2f}_{view_accuracy:.2f}.h5',
+    tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:02d}_ca-{class_accuracy:.2f}_'
+                                                                        'va-{view_accuracy:.2f}.h5'),
                                        monitor='loss',
                                        mode='min',
                                        save_best_only=True,
                                        save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
 ]
-EPOCHS = 10
-BATCH_SIZE = 32
-
-labels_dict = utility.get_label_dict()
+EPOCHS = args.epochs
+BATCH_SIZE = args.batch_size
 
 
 def data_loader():
+    labels_dict = utility.get_label_dict()
     for i in range(NUM_OBJECTS):
         file_path = os.path.join(DATA_PATH, FILES[i])
         x = keras.preprocessing.image.load_img(file_path,
@@ -74,28 +82,45 @@ def dataset_generator():
     return dataset
 
 
-def generate_cnn():
+def generate_cnn(app="efficientnet"):
     inputs = keras.Input(shape=(240, 320, 3))
-    vgg = keras.applications.VGG16(include_top=False,
-                                   weights='imagenet',
-                                   input_tensor=inputs,
-                                   input_shape=(240, 320, 3))
-    preprocessed = keras.applications.vgg16.preprocess_input(inputs)
-    x = vgg(preprocessed)
+
+    if app == "vgg":
+        net = keras.applications.VGG16(include_top=False,
+                                       weights='imagenet',
+                                       input_tensor=inputs)
+        preprocessed = keras.applications.vgg16.preprocess_input(inputs)
+
+    elif app == "efficientnet":
+        net = keras.applications.EfficientNetB0(include_top=False,
+                                                weights='imagenet')
+        preprocessed = keras.applications.efficientnet.preprocess_input(inputs)
+
+    elif app == "mobilenet":
+        net = keras.applications.MobileNet(include_top=False,
+                                           weights='imagenet')
+        preprocessed = keras.applications.mobilenet.preprocess_input(inputs)
+
+    elif app == "mobilenetv2":
+        net = keras.applications.MobileNetV2(include_top=False,
+                                             weights='imagenet')
+        preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
+
+    x = net(preprocessed)
     x = layers.Flatten()(x)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
     model.summary()
-    losses = {"class": "categorical_crossentropy",
-              "view": "categorical_crossentropy"}
+    losses = {"class": 'categorical_crossentropy',
+              "view": 'categorical_crossentropy'}
     model.compile(optimizer=keras.optimizers.Adam(lr=0.001), loss=losses, metrics=METRICS[4:])
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
 
 def main():
-    model = generate_cnn()
+    model = generate_cnn(app=args.architecture)
     num_batches = int(NUM_OBJECTS / BATCH_SIZE)
     data_gen = dataset_generator()
     history = model.fit(data_gen, steps_per_epoch=num_batches, epochs=EPOCHS, callbacks=CALLBACKS)
