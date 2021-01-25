@@ -76,7 +76,9 @@ BATCH_SIZE = args.batch_size
 
 def data_loader_train():
     labels_dict = utility.get_label_dict()
-    for i in range(NUM_OBJECTS_TRAIN):
+    # for i in range(NUM_OBJECTS_TRAIN):
+    for i in range(32):
+
         file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
         x = keras.preprocessing.image.load_img(file_path,
                                                color_mode='rgb',
