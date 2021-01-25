@@ -14,8 +14,8 @@ from tensorflow.keras import layers
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("train_data", help="Directory where the single views are stored.")
-parser.add_argument("validation_data")
+parser.add_argument("train_data")
+parser.add_argument("test_data")
 parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--epochs", type=int, default=3)
 parser.add_argument("-a", "--architecture", default="vgg", choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2'])
