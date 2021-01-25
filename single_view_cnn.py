@@ -143,7 +143,7 @@ def generate_cnn(app="efficientnet"):
 
     x = net(preprocessed)
     x = layers.Flatten()(x)
-    x = layers.Dropout(0.25)
+    x = layers.Dropout(0.25)(x)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
