@@ -23,15 +23,16 @@ args = parser.parse_args()
 
 TIMESTAMP = utility.get_datastamp()
 MODEL_DIR = os.path.join(args.out, f"{args.architecture}-{TIMESTAMP}")
+
 TRAIN_DATA_PATH = args.train_data
-TRAIN_FILES = os.listdir(TRAIN_DATA_PATH)[:60]
+TRAIN_FILES = os.listdir(TRAIN_DATA_PATH)
 for filename in TRAIN_FILES:  # Removes file without .png extension
     if not filename.endswith('png'):
         TRAIN_FILES.remove(filename)
 NUM_OBJECTS_TRAIN = len(TRAIN_FILES)
 
 TEST_DATA_PATH = args.test_data
-TEST_FILES = os.listdir(TEST_DATA_PATH)[:60]
+TEST_FILES = os.listdir(TEST_DATA_PATH)
 for filename in TEST_FILES:
     if not filename.endswith('png'):
         TEST_FILES.remove(filename)
@@ -51,11 +52,11 @@ METRICS = [
 ]
 
 
-def scheduler(epoch, lr):
-    if epoch < 1:
-        return lr
-    else:
-        return lr * tf.math.exp(-1.099)
+# def scheduler(epoch, lr):
+#     if epoch < 1:
+#         return lr
+#     else:
+#         return lr * tf.math.exp(-1.099)
 
 
 CALLBACKS = [
@@ -68,7 +69,7 @@ CALLBACKS = [
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
-    tf.keras.callbacks.LearningRateScheduler(scheduler)
+    # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 EPOCHS = args.epochs
 BATCH_SIZE = args.batch_size
@@ -114,6 +115,7 @@ def dataset_generator_train():
                                              output_shapes=(tf.TensorShape([240, 320, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
+    dataset = dataset.repeat(EPOCHS)
     return dataset
 
 
@@ -168,7 +170,7 @@ def generate_cnn(app="efficientnet"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer='adam', loss=losses, metrics=METRICS[4:])
+    model.compile(optimizer=keras.optimizers.Adagrad(learning_rate=0.001), loss=losses, metrics=METRICS[4:])
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
@@ -177,14 +179,14 @@ def main():
     model = generate_cnn(app=args.architecture)
     num_batches = int(NUM_OBJECTS_TRAIN / BATCH_SIZE)
     train_data_gen = dataset_generator_train()
-    test_data_gen = data_loader_test()
+    test_data = list(dataset_generator_test().as_numpy_iterator())
     history = model.fit(train_data_gen,
                         shuffle=True,
                         steps_per_epoch=num_batches,
                         batch_size=BATCH_SIZE,
                         epochs=EPOCHS,
                         callbacks=CALLBACKS,
-                        validation_data=test_data_gen)
+                        validation_data=test_data)
     hist_df = pd.DataFrame(history.history)
     hist_df.to_csv(os.path.join(f"class-view_training_history.csv"))
 
