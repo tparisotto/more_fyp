@@ -9,8 +9,6 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-# TODO: Split with validation/train set
-
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 parser = argparse.ArgumentParser()
@@ -18,7 +16,8 @@ parser.add_argument("train_data")
 parser.add_argument("test_data")
 parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--epochs", type=int, default=3)
-parser.add_argument("-a", "--architecture", default="vgg", choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'light'])
+parser.add_argument("-a", "--architecture", default="vgg",
+                    choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'light'])
 parser.add_argument("-o", "--out", default="./")
 args = parser.parse_args()
 
@@ -50,6 +49,15 @@ METRICS = [
     keras.metrics.Recall(name='recall'),
     keras.metrics.AUC(name='auc'),
 ]
+
+
+def scheduler(epoch, lr):
+    if epoch < 1:
+        return lr
+    else:
+        return lr * tf.math.exp(-1.099)
+
+
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=2),
     tf.keras.callbacks.ModelCheckpoint(
@@ -60,6 +68,7 @@ CALLBACKS = [
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
+    tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 EPOCHS = args.epochs
 BATCH_SIZE = args.batch_size
@@ -159,7 +168,7 @@ def generate_cnn(app="efficientnet"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer=keras.optimizers.Adam(lr=1e-3), loss=losses, metrics=METRICS[4:])
+    model.compile(optimizer='adam', loss=losses, metrics=METRICS[4:])
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
