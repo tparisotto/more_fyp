@@ -24,14 +24,14 @@ args = parser.parse_args()
 TIMESTAMP = utility.get_datastamp()
 MODEL_DIR = os.path.join(args.out, f"{args.architecture}-{TIMESTAMP}")
 TRAIN_DATA_PATH = args.train_data
-TRAIN_FILES = os.listdir(TRAIN_DATA_PATH)
+TRAIN_FILES = os.listdir(TRAIN_DATA_PATH)[:60]
 for filename in TRAIN_FILES:  # Removes file without .png extension
     if not filename.endswith('png'):
         TRAIN_FILES.remove(filename)
 NUM_OBJECTS_TRAIN = len(TRAIN_FILES)
 
 TEST_DATA_PATH = args.test_data
-TEST_FILES = os.listdir(TEST_DATA_PATH)
+TEST_FILES = os.listdir(TEST_DATA_PATH)[:60]
 for filename in TEST_FILES:
     if not filename.endswith('png'):
         TEST_FILES.remove(filename)
@@ -76,9 +76,7 @@ BATCH_SIZE = args.batch_size
 
 def data_loader_train():
     labels_dict = utility.get_label_dict()
-    # for i in range(NUM_OBJECTS_TRAIN):
-    for i in range(32):
-
+    for i in range(NUM_OBJECTS_TRAIN):
         file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
         x = keras.preprocessing.image.load_img(file_path,
                                                color_mode='rgb',
