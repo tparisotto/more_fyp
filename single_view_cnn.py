@@ -18,7 +18,7 @@ parser.add_argument("train_data")
 parser.add_argument("test_data")
 parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--epochs", type=int, default=3)
-parser.add_argument("-a", "--architecture", default="vgg", choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2'])
+parser.add_argument("-a", "--architecture", default="vgg", choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'light'])
 parser.add_argument("-o", "--out", default="./")
 args = parser.parse_args()
 
@@ -125,23 +125,32 @@ def generate_cnn(app="efficientnet"):
                                        weights='imagenet',
                                        input_tensor=inputs)
         preprocessed = keras.applications.vgg16.preprocess_input(inputs)
+        x = net(preprocessed)
 
     elif app == "efficientnet":
         net = keras.applications.EfficientNetB0(include_top=False,
                                                 weights='imagenet')
         preprocessed = keras.applications.efficientnet.preprocess_input(inputs)
+        x = net(preprocessed)
 
     elif app == "mobilenet":
         net = keras.applications.MobileNet(include_top=False,
                                            weights='imagenet')
         preprocessed = keras.applications.mobilenet.preprocess_input(inputs)
+        x = net(preprocessed)
 
     elif app == "mobilenetv2":
         net = keras.applications.MobileNetV2(include_top=False,
                                              weights='imagenet')
         preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
+        x = net(preprocessed)
 
-    x = net(preprocessed)
+    elif app == "light":
+        x = keras.layers.Conv2D(32, 5, 3, activation='relu')(inputs)
+        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+        x = keras.layers.Conv2D(32, 5, 3, activation='relu')(x)
+        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+
     x = layers.Flatten()(x)
     x = layers.Dropout(0.25)(x)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
@@ -150,7 +159,7 @@ def generate_cnn(app="efficientnet"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer=keras.optimizers.Adam(lr=0.0001), loss=losses, metrics=METRICS[4:])
+    model.compile(optimizer=keras.optimizers.Adam(lr=1e-4), loss=losses, metrics=METRICS[4:])
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
