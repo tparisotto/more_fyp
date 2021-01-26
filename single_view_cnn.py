@@ -1,4 +1,5 @@
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
 import numpy as np
@@ -7,7 +8,6 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 parser = argparse.ArgumentParser()
@@ -49,14 +49,10 @@ print()
 os.mkdir(MODEL_DIR)
 
 METRICS = [
-    keras.metrics.TruePositives(name='tp'),
-    keras.metrics.FalsePositives(name='fp'),
-    keras.metrics.TrueNegatives(name='tn'),
-    keras.metrics.FalseNegatives(name='fn'),
     keras.metrics.BinaryAccuracy(name='accuracy'),
     keras.metrics.Precision(name='precision'),
     keras.metrics.Recall(name='recall'),
-    keras.metrics.AUC(name='auc'),
+    keras.metrics.AUC(name='auc')
 ]
 
 
@@ -182,7 +178,7 @@ def generate_cnn(app="efficientnet"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer='adam', loss=losses, metrics=METRICS[4:], loss_weights=[0.4, 0.6])
+    model.compile(optimizer='adam', loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
