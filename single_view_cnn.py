@@ -21,9 +21,12 @@ parser.add_argument("-a", "--architecture", default="vgg",
 parser.add_argument("-o", "--out", default="./")
 args = parser.parse_args()
 
+EPOCHS = args.epochs
+BATCH_SIZE = args.batch_size
 TIMESTAMP = utility.get_datastamp()
 MODEL_DIR = os.path.join(args.out, f"{args.architecture}-{TIMESTAMP}")
 
+print("[INFO] Processing training data..")
 TRAIN_DATA_PATH = args.train_data
 TRAIN_FILES = os.listdir(TRAIN_DATA_PATH)
 for filename in TRAIN_FILES:  # Removes file without .png extension
@@ -33,6 +36,7 @@ np.random.shuffle(TRAIN_FILES)
 NUM_OBJECTS_TRAIN = len(TRAIN_FILES)
 TRAIN_FILTER = 1000
 
+print("[INFO] Processing validation data..")
 TEST_DATA_PATH = args.test_data
 TEST_FILES = os.listdir(TEST_DATA_PATH)
 for filename in TEST_FILES:
@@ -42,6 +46,7 @@ np.random.shuffle(TEST_FILES)
 NUM_OBJECTS_TEST = len(TEST_FILES)
 TEST_FILTER = 100
 
+print()
 os.mkdir(MODEL_DIR)
 
 METRICS = [
@@ -75,8 +80,7 @@ CALLBACKS = [
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
     # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
-EPOCHS = args.epochs
-BATCH_SIZE = args.batch_size
+
 
 
 def data_loader_train():
@@ -130,7 +134,6 @@ def dataset_generator_test():
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
                                              output_shapes=(tf.TensorShape([240, 320, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
-    dataset = dataset.batch(BATCH_SIZE)
     return dataset
 
 
