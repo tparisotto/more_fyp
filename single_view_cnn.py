@@ -188,7 +188,7 @@ def main():
     model = generate_cnn(app=args.architecture)
     num_batches = int((NUM_OBJECTS_TRAIN/TRAIN_FILTER) / BATCH_SIZE)
     train_data_gen = dataset_generator_train()
-    test_data = list(dataset_generator_test().as_numpy_iterator())
+    test_data = dataset_generator_test()
     history = model.fit(train_data_gen,
                         shuffle=True,
                         steps_per_epoch=num_batches,
