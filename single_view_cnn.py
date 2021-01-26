@@ -1,6 +1,4 @@
 import os
-
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
 import numpy as np
@@ -9,7 +7,8 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-# tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("train_data")
@@ -183,7 +182,7 @@ def generate_cnn(app="efficientnet"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer='adam', loss=losses, metrics=METRICS[4:])
+    model.compile(optimizer='adam', loss=losses, metrics=METRICS[4:], loss_weights=[0.4, 0.6])
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
