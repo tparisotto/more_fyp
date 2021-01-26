@@ -34,7 +34,7 @@ for filename in TRAIN_FILES:  # Removes file without .png extension
         TRAIN_FILES.remove(filename)
 np.random.shuffle(TRAIN_FILES)
 NUM_OBJECTS_TRAIN = len(TRAIN_FILES)
-TRAIN_FILTER = 1000
+TRAIN_FILTER = 10
 
 print("[INFO] Processing validation data..")
 TEST_DATA_PATH = args.test_data
