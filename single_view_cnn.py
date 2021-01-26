@@ -61,15 +61,15 @@ METRICS = [
 ]
 
 
-# def scheduler(epoch, lr):
-#     if epoch < 1:
-#         return lr
-#     else:
-#         return lr * tf.math.exp(-1.099)
+def scheduler(epoch, lr):
+    if epoch < 10:
+        return lr
+    else:
+        return lr * tf.math.exp(-0.1)
 
 
 CALLBACKS = [
-    # tf.keras.callbacks.EarlyStopping(patience=2),
+    tf.keras.callbacks.EarlyStopping(patience=3),
     tf.keras.callbacks.ModelCheckpoint(
         filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:02d}_ca-{class_accuracy:.2f}_'
                                          'va-{view_accuracy:.2f}.h5'),
@@ -78,9 +78,8 @@ CALLBACKS = [
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
-    # tf.keras.callbacks.LearningRateScheduler(scheduler)
+    tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
-
 
 
 def data_loader_train():
@@ -90,7 +89,7 @@ def data_loader_train():
             file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
             x = keras.preprocessing.image.load_img(file_path,
                                                    color_mode='rgb',
-                                                   target_size=(240, 320),
+                                                   target_size=(224, 300),
                                                    interpolation='nearest')
             x = keras.preprocessing.image.img_to_array(x)
             label_class = TRAIN_FILES[i].split("_")[0]
@@ -108,7 +107,7 @@ def data_loader_test():
             file_path = os.path.join(TEST_DATA_PATH, TEST_FILES[i])
             x = keras.preprocessing.image.load_img(file_path,
                                                    color_mode='rgb',
-                                                   target_size=(240, 320),
+                                                   target_size=(224, 300),
                                                    interpolation='nearest')
             x = keras.preprocessing.image.img_to_array(x)
             label_class = TEST_FILES[i].split("_")[0]
@@ -122,7 +121,7 @@ def data_loader_test():
 def dataset_generator_train():
     dataset = tf.data.Dataset.from_generator(data_loader_train,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([240, 320, 3]),
+                                             output_shapes=(tf.TensorShape([224, 300, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -132,7 +131,7 @@ def dataset_generator_train():
 def dataset_generator_test():
     dataset = tf.data.Dataset.from_generator(data_loader_test,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([240, 320, 3]),
+                                             output_shapes=(tf.TensorShape([224, 300, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -140,30 +139,34 @@ def dataset_generator_test():
 
 
 def generate_cnn(app="efficientnet"):
-    inputs = keras.Input(shape=(240, 320, 3))
+    inputs = keras.Input(shape=(224, 300, 3))
 
     if app == "vgg":
         net = keras.applications.VGG16(include_top=False,
                                        weights='imagenet',
                                        input_tensor=inputs)
+        net.trainable = False
         preprocessed = keras.applications.vgg16.preprocess_input(inputs)
         x = net(preprocessed)
 
     elif app == "efficientnet":
         net = keras.applications.EfficientNetB0(include_top=False,
                                                 weights='imagenet')
+        net.trainable = False
         preprocessed = keras.applications.efficientnet.preprocess_input(inputs)
         x = net(preprocessed)
 
     elif app == "mobilenet":
         net = keras.applications.MobileNet(include_top=False,
                                            weights='imagenet')
+        net.trainable = False
         preprocessed = keras.applications.mobilenet.preprocess_input(inputs)
         x = net(preprocessed)
 
     elif app == "mobilenetv2":
         net = keras.applications.MobileNetV2(include_top=False,
                                              weights='imagenet')
+        net.trainable = False
         preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
         x = net(preprocessed)
 
@@ -174,21 +177,20 @@ def generate_cnn(app="efficientnet"):
         x = keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
 
     x = layers.Flatten()(x)
-    x = layers.Dropout(0.5)(x)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss=losses, metrics=METRICS[4:])
+    model.compile(optimizer='adam', loss=losses, metrics=METRICS[4:])
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
 
 def main():
     model = generate_cnn(app=args.architecture)
-    num_batches = int((NUM_OBJECTS_TRAIN/TRAIN_FILTER) / BATCH_SIZE)
+    num_batches = int((NUM_OBJECTS_TRAIN / TRAIN_FILTER) / BATCH_SIZE)
     train_data_gen = dataset_generator_train()
     test_data = dataset_generator_test()
     history = model.fit(train_data_gen,
