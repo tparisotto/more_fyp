@@ -29,7 +29,7 @@ TRAIN_FILES = os.listdir(TRAIN_DATA_PATH)
 for filename in TRAIN_FILES:  # Removes file without .png extension
     if not filename.endswith('png'):
         TRAIN_FILES.remove(filename)
-np.random.shuffle(TRAIN_DATA_PATH)
+np.random.shuffle(TRAIN_FILES)
 NUM_OBJECTS_TRAIN = len(TRAIN_FILES)
 TRAIN_FILTER = 1000
 
