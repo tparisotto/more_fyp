@@ -183,7 +183,7 @@ def generate_cnn(app="efficientnet"):
 
 def main():
     model = generate_cnn(app=args.architecture)
-    num_batches = int(NUM_OBJECTS_TRAIN / BATCH_SIZE)
+    num_batches = int((NUM_OBJECTS_TRAIN/TRAIN_FILTER) / BATCH_SIZE)
     train_data_gen = dataset_generator_train()
     test_data = list(dataset_generator_test().as_numpy_iterator())
     history = model.fit(train_data_gen,
