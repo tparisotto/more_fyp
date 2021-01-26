@@ -4,6 +4,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
 import numpy as np
+import random
 import utility
 import tensorflow as tf
 from tensorflow import keras
@@ -29,14 +30,18 @@ TRAIN_FILES = os.listdir(TRAIN_DATA_PATH)
 for filename in TRAIN_FILES:  # Removes file without .png extension
     if not filename.endswith('png'):
         TRAIN_FILES.remove(filename)
+random.shuffle(TRAIN_DATA_PATH)
 NUM_OBJECTS_TRAIN = len(TRAIN_FILES)
+TRAIN_FILTER = 1000
 
 TEST_DATA_PATH = args.test_data
 TEST_FILES = os.listdir(TEST_DATA_PATH)
 for filename in TEST_FILES:
     if not filename.endswith('png'):
         TEST_FILES.remove(filename)
+random.shuffle(TEST_FILES)
 NUM_OBJECTS_TEST = len(TEST_FILES)
+TEST_FILTER = 100
 
 os.makedirs(MODEL_DIR)
 
@@ -78,35 +83,37 @@ BATCH_SIZE = args.batch_size
 def data_loader_train():
     labels_dict = utility.get_label_dict()
     for i in range(NUM_OBJECTS_TRAIN):
-        file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
-        x = keras.preprocessing.image.load_img(file_path,
-                                               color_mode='rgb',
-                                               target_size=(240, 320),
-                                               interpolation='nearest')
-        x = keras.preprocessing.image.img_to_array(x)
-        label_class = TRAIN_FILES[i].split("_")[0]
-        if label_class == 'night':
-            label_class = 'night_stand'  # Quick fix for label parsing
-        label_class = utility.int_to_1hot(labels_dict[label_class], 10)
-        label_view = utility.int_to_1hot(int(TRAIN_FILES[i].split("_")[-1].split(".")[0]), 60)
-        yield x, (label_class, label_view)
+        if i % TRAIN_FILTER == 0:
+            file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
+            x = keras.preprocessing.image.load_img(file_path,
+                                                   color_mode='rgb',
+                                                   target_size=(240, 320),
+                                                   interpolation='nearest')
+            x = keras.preprocessing.image.img_to_array(x)
+            label_class = TRAIN_FILES[i].split("_")[0]
+            if label_class == 'night':
+                label_class = 'night_stand'  # Quick fix for label parsing
+            label_class = utility.int_to_1hot(labels_dict[label_class], 10)
+            label_view = utility.int_to_1hot(int(TRAIN_FILES[i].split("_")[-1].split(".")[0]), 60)
+            yield x, (label_class, label_view)
 
 
 def data_loader_test():
     labels_dict = utility.get_label_dict()
     for i in range(NUM_OBJECTS_TEST):
-        file_path = os.path.join(TEST_DATA_PATH, TEST_FILES[i])
-        x = keras.preprocessing.image.load_img(file_path,
-                                               color_mode='rgb',
-                                               target_size=(240, 320),
-                                               interpolation='nearest')
-        x = keras.preprocessing.image.img_to_array(x)
-        label_class = TEST_FILES[i].split("_")[0]
-        if label_class == 'night':
-            label_class = 'night_stand'  # Quick fix for label parsing
-        label_class = utility.int_to_1hot(labels_dict[label_class], 10)
-        label_view = utility.int_to_1hot(int(TEST_FILES[i].split("_")[-1].split(".")[0]), 60)
-        yield x, (label_class, label_view)
+        if i % TEST_FILTER == 0:
+            file_path = os.path.join(TEST_DATA_PATH, TEST_FILES[i])
+            x = keras.preprocessing.image.load_img(file_path,
+                                                   color_mode='rgb',
+                                                   target_size=(240, 320),
+                                                   interpolation='nearest')
+            x = keras.preprocessing.image.img_to_array(x)
+            label_class = TEST_FILES[i].split("_")[0]
+            if label_class == 'night':
+                label_class = 'night_stand'  # Quick fix for label parsing
+            label_class = utility.int_to_1hot(labels_dict[label_class], 10)
+            label_view = utility.int_to_1hot(int(TEST_FILES[i].split("_")[-1].split(".")[0]), 60)
+            yield x, (label_class, label_view)
 
 
 def dataset_generator_train():
@@ -170,7 +177,7 @@ def generate_cnn(app="efficientnet"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer=keras.optimizers.Adagrad(learning_rate=0.001), loss=losses, metrics=METRICS[4:])
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001), loss=losses, metrics=METRICS[4:])
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
