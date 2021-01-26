@@ -4,7 +4,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
 import numpy as np
-import random
 import utility
 import tensorflow as tf
 from tensorflow import keras
@@ -30,7 +29,7 @@ TRAIN_FILES = os.listdir(TRAIN_DATA_PATH)
 for filename in TRAIN_FILES:  # Removes file without .png extension
     if not filename.endswith('png'):
         TRAIN_FILES.remove(filename)
-random.shuffle(TRAIN_DATA_PATH)
+np.random.shuffle(TRAIN_DATA_PATH)
 NUM_OBJECTS_TRAIN = len(TRAIN_FILES)
 TRAIN_FILTER = 1000
 
@@ -39,7 +38,7 @@ TEST_FILES = os.listdir(TEST_DATA_PATH)
 for filename in TEST_FILES:
     if not filename.endswith('png'):
         TEST_FILES.remove(filename)
-random.shuffle(TEST_FILES)
+np.random.shuffle(TEST_FILES)
 NUM_OBJECTS_TEST = len(TEST_FILES)
 TEST_FILTER = 100
 
