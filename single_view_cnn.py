@@ -132,8 +132,10 @@ def dataset_generator_train():
 def dataset_generator_test():
     dataset = tf.data.Dataset.from_generator(data_loader_test,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([1, 240, 320, 3]),
-                                                            (tf.TensorShape([1,10]), tf.TensorShape([1,60]))))
+                                             output_shapes=(tf.TensorShape([240, 320, 3]),
+                                                            (tf.TensorShape([10]), tf.TensorShape([60]))))
+    dataset = dataset.batch(BATCH_SIZE)
+    dataset = dataset.repeat(EPOCHS)
     return dataset
 
 
