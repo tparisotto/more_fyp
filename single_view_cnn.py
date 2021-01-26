@@ -68,7 +68,7 @@ CALLBACKS = [
     tf.keras.callbacks.ModelCheckpoint(
         filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:02d}_ca-{class_accuracy:.2f}_'
                                          'va-{view_accuracy:.2f}.h5'),
-        monitor='loss',
+        monitor='val_loss',
         mode='min',
         save_best_only=True,
         save_freq='epoch'),
