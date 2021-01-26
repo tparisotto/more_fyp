@@ -1,6 +1,6 @@
 import os
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
 import numpy as np
@@ -9,7 +9,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+# tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("train_data")
@@ -42,7 +42,7 @@ np.random.shuffle(TEST_FILES)
 NUM_OBJECTS_TEST = len(TEST_FILES)
 TEST_FILTER = 100
 
-os.makedirs(MODEL_DIR)
+os.mkdir(MODEL_DIR)
 
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
