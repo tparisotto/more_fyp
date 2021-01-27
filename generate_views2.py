@@ -22,6 +22,7 @@ import argparse
 from open3d import *
 import open3d as o3d
 import numpy as np
+import cv2
 from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
@@ -50,8 +51,8 @@ args = parser.parse_args()
 BASE_DIR = sys.path[0]
 OUT_DIR = os.path.normpath(os.path.join(BASE_DIR, args.out))
 DATA_PATH = os.path.normpath(os.path.join(BASE_DIR, args.data))
-IMAGE_WIDTH = 640
-IMAGE_HEIGHT = 480
+IMAGE_WIDTH = 224
+IMAGE_HEIGHT = 224
 N_VIEWS_W = args.horizontal_split
 N_VIEWS_H = args.vertical_split
 
@@ -66,7 +67,7 @@ class ViewData:
     theta = 0
 
 
-if os.path.exists(os.path.normpath(os.path.join(OUT_DIR,"depth"))):
+if os.path.exists(os.path.normpath(os.path.join(OUT_DIR, "depth"))):
     print("[Error] Folder already exists.")
     exit(0)
 else:
@@ -76,8 +77,8 @@ else:
 def normalize3d(vector):
     np_arr = np.asarray(vector)
     max_val = np.max(np_arr)
-    np_normalized = np_arr / max_val
-    return utility.Vector3dVector(np_normalized)
+    np_normalized = np_arr / (2 * max_val)
+    return o3d.utility.Vector3dVector(np_normalized)
 
 
 def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
@@ -97,8 +98,16 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis.update_renderer()
     vis.capture_depth_image(
         "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
-                                                          ViewData.theta, ViewData.phi, ViewData.view_index), False)
+                                                          ViewData.theta, ViewData.phi, ViewData.view_index),
+        depth_scale=10000)
     vis.destroy_window()
+    image = cv2.imread(
+        "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
+                                                          ViewData.theta, ViewData.phi, ViewData.view_index))
+    result = cv2.normalize(image, image, 0, 255, norm_type=cv2.NORM_MINMAX)
+    cv2.imwrite("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
+                                                                  ViewData.theta, ViewData.phi, ViewData.view_index),
+                result)
 
 
 labels = []
@@ -142,4 +151,4 @@ for label in labels:
             last_rotation = rot
 
         end = time()
-        print(f"[INFO] Time to elaborate file {filename}: {end-start}")
+        print(f"[INFO] Time to elaborate file {filename}: {end - start}")
