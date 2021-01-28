@@ -101,13 +101,13 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
                                                           int(ViewData.theta), int(ViewData.phi), ViewData.view_index),
         depth_scale=10000)
     vis.destroy_window()
-    image = cv2.imread(
-        "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
-                                                          int(ViewData.theta), int(ViewData.phi), ViewData.view_index))
-    result = cv2.normalize(image, image, 0, 255, norm_type=cv2.NORM_MINMAX)
-    cv2.imwrite("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
-                                                                  int(ViewData.theta), int(ViewData.phi), ViewData.view_index),
-                result)
+    # image = cv2.imread(
+    #     "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
+    #                                                       int(ViewData.theta), int(ViewData.phi), ViewData.view_index))
+    # result = cv2.normalize(image, image, 0, 255, norm_type=cv2.NORM_MINMAX)
+    # cv2.imwrite("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
+    #                                                               int(ViewData.theta), int(ViewData.phi), ViewData.view_index),
+    #             result)
 
 
 labels = []
