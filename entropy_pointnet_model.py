@@ -11,12 +11,12 @@ import scipy.signal as sig
 import utility
 from tqdm import tqdm, trange
 import trimesh
-# import tensorflow as tf
-# from tensorflow import keras
-# from tensorflow.keras import layers
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
-# print(f"Tensorflow v{tf.__version__}\n")
+print(f"Tensorflow v{tf.__version__}\n")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--data', type=str, required=True)
@@ -24,6 +24,7 @@ parser.add_argument('-b', '--batch_size', type=int, default=8)
 parser.add_argument('-e', '--epochs', type=int, default=5)
 parser.add_argument('-p', '--points', type=int, default=2048)
 parser.add_argument('-s', '--split', type=float, default=0.9)
+parser.add_argument('--sample_rate', type=float, default=10)
 parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('--save_csv')
 parser.add_argument('--save_npz')
@@ -39,27 +40,41 @@ BASE_DIR = sys.path[0]
 DATA_DIR = os.path.join(BASE_DIR, args.data)
 MN_DIR = os.path.join(BASE_DIR, args.modelnet_path)
 NUM_VIEWS = 60
+SAMPLE_RATE = args.sample_rate
 SPLIT = args.split
-# METRICS = [
-#     keras.metrics.TruePositives(name='tp'),
-#     keras.metrics.FalsePositives(name='fp'),
-#     keras.metrics.TrueNegatives(name='tn'),
-#     keras.metrics.FalseNegatives(name='fn'),
-#     keras.metrics.BinaryAccuracy(name='accuracy'),
-#     keras.metrics.Precision(name='precision'),
-#     keras.metrics.Recall(name='recall'),
-#     keras.metrics.AUC(name='auc'),
-# ]
+METRICS = [
+    keras.metrics.TruePositives(name='tp'),
+    keras.metrics.FalsePositives(name='fp'),
+    keras.metrics.TrueNegatives(name='tn'),
+    keras.metrics.FalseNegatives(name='fn'),
+    keras.metrics.BinaryAccuracy(name='accuracy'),
+    keras.metrics.Precision(name='precision'),
+    keras.metrics.Recall(name='recall'),
+    keras.metrics.AUC(name='auc'),
+]
+
+
+class OrthogonalRegularizer(keras.regularizers.Regularizer):
+    def __init__(self, num_features, l2reg=0.001):
+        self.num_features = num_features
+        self.l2reg = l2reg
+        self.eye = tf.eye(num_features)
+
+    def __call__(self, x):
+        x = tf.reshape(x, (-1, self.num_features, self.num_features))
+        xxt = tf.tensordot(x, x, axes=(2, 2))
+        xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
+        return tf.reduce_sum(self.l2reg * tf.square(xxt - self.eye))
 
 
 def parse_data():
     files = os.listdir(DATA_DIR)
-    if args.verbose:
-        print(f"[INFO] Parsing data from {DATA_DIR}...")
+    print(f"[INFO] Parsing data from {DATA_DIR}...")
     files.sort()
     for filename in files:  # Removes file without .png extension
         if not filename.endswith('png'):
             files.remove(filename)
+    files = files[::SAMPLE_RATE]
 
     labels = []
     object_index = []
@@ -68,7 +83,7 @@ def parse_data():
     view_code = []
     entropy = []
     if args.verbose:
-        for filename in tqdm(files[:1200]):
+        for filename in tqdm(files):
             value_string = filename.replace(".png", "")
             label = value_string.split("_")[0]
             if label == "night":
@@ -93,7 +108,8 @@ def parse_data():
             phi.append(int(value_string[-3]))
             theta.append(int(value_string[-5]))
             object_index.append(value_string[-7])
-            img = plt.imread(os.path.join(DATA_DIR, filename))[:, :, 0]  # images in grayscale so every channel is the same
+            img = plt.imread(os.path.join(DATA_DIR, filename))[:, :,
+                  0]  # images in grayscale so every channel is the same
             entropy.append(shannon_entropy(img))
     df = pd.DataFrame({"label": labels,
                        "object_index": object_index,
@@ -162,7 +178,7 @@ def get_vectors_from_view_labels(data):
 
 
 def load_dataset(data, num_points):
-    num_objects = int(len(data)/NUM_VIEWS)
+    num_objects = int(len(data) / NUM_VIEWS)
     x = []
     y = []
     if args.verbose:
@@ -175,8 +191,9 @@ def load_dataset(data, num_points):
             x_point_cloud = mesh.sample(num_points)
             x.append(x_point_cloud)
         for i in trange(num_objects):
-            data_subset = data.iloc[NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
-            labels = utility.get_labels_from_object_views(data_subset)
+            data_subset = data.iloc[
+                          NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
+            labels = get_vectors_from_view_labels(data_subset)
             label_vectors = utility.view_vector(labels, NUM_VIEWS)
             y.append(label_vectors)
     else:
@@ -191,17 +208,71 @@ def load_dataset(data, num_points):
         for i in range(num_objects):
             data_subset = data.iloc[
                           NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
-            labels = utility.get_labels_from_object_views(data_subset)
+            labels = get_vectors_from_view_labels(data_subset)
             label_vectors = utility.view_vector(labels, NUM_VIEWS)
             y.append(label_vectors)
     return x, y
 
 
-# def generate_cnn():
-#     model = keras.models.Sequential()
-#     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
-#     model.summary()
-#     return model
+def conv_bn(x, filters):
+    x = layers.Conv1D(filters, kernel_size=1, padding="valid")(x)
+    x = layers.BatchNormalization(momentum=0.0)(x)
+    return layers.Activation("relu")(x)
+
+
+def dense_bn(x, filters):
+    x = layers.Dense(filters)(x)
+    x = layers.BatchNormalization(momentum=0.0)(x)
+    return layers.Activation("relu")(x)
+
+
+def tnet(inputs, num_features):
+    bias = keras.initializers.Constant(np.eye(num_features).flatten())
+    reg = OrthogonalRegularizer(num_features)
+
+    x = conv_bn(inputs, 32)
+    x = conv_bn(x, 64)
+    x = conv_bn(x, 512)
+    x = layers.GlobalMaxPooling1D()(x)
+    x = dense_bn(x, 256)
+    x = dense_bn(x, 128)
+    x = layers.Dense(
+        num_features * num_features,
+        kernel_initializer="zeros",
+        bias_initializer=bias,
+        activity_regularizer=reg,
+    )(x)
+    feat_T = layers.Reshape((num_features, num_features))(x)
+    return layers.Dot(axes=(2, 1))([inputs, feat_T])
+
+
+def generate_pointnet():
+    inputs = keras.Input(shape=(args.points, 3))
+
+    x = tnet(inputs, 3)
+    x = conv_bn(x, 32)
+    x = conv_bn(x, 32)
+    x = tnet(x, 32)
+    x = conv_bn(x, 32)
+    x = conv_bn(x, 64)
+    x = conv_bn(x, 512)
+    x = layers.GlobalMaxPooling1D()(x)
+    x = dense_bn(x, 256)
+    x = layers.Dropout(0.3)(x)
+    x = dense_bn(x, 128)
+    x = layers.Dropout(0.3)(x)
+
+    outputs = layers.Dense(NUM_VIEWS, activation="sigmoid")(x)
+
+    model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
+    model.compile(
+        loss="binary_crossentropy",
+        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        metrics=METRICS,
+    )
+    model.summary()
+
+    return model
 
 
 def main():
