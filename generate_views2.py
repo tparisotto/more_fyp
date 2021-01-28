@@ -83,7 +83,7 @@ def normalize3d(vector):
 
 def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis = o3d.visualization.Visualizer()
-    vis.create_window(width=640, height=480, visible=False)
+    vis.create_window(width=IMAGE_WIDTH, height=IMAGE_HEIGHT, visible=False)
     vis.add_geometry(pcd)
     # Rotate back from last rotation
     R_0 = pcd.get_rotation_matrix_from_xyz(last_rot)
@@ -98,15 +98,15 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis.update_renderer()
     vis.capture_depth_image(
         "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
-                                                          ViewData.theta, ViewData.phi, ViewData.view_index),
+                                                          int(ViewData.theta), int(ViewData.phi), ViewData.view_index),
         depth_scale=10000)
     vis.destroy_window()
     image = cv2.imread(
         "{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
-                                                          ViewData.theta, ViewData.phi, ViewData.view_index))
+                                                          int(ViewData.theta), int(ViewData.phi), ViewData.view_index))
     result = cv2.normalize(image, image, 0, 255, norm_type=cv2.NORM_MINMAX)
     cv2.imwrite("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
-                                                                  ViewData.theta, ViewData.phi, ViewData.view_index),
+                                                                  int(ViewData.theta), int(ViewData.phi), ViewData.view_index),
                 result)
 
 
@@ -151,4 +151,5 @@ for label in labels:
             last_rotation = rot
 
         end = time()
-        print(f"[INFO] Time to elaborate file {filename}: {end - start}")
+        if args.verbose:
+            print(f"[INFO] Time to elaborate file {filename}: {end - start}")
