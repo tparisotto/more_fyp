@@ -56,6 +56,7 @@ def parse_data():
     files = os.listdir(DATA_DIR)
     if args.verbose:
         print(f"[INFO] Parsing data from {DATA_DIR}...")
+    files.sort()
     for filename in files:  # Removes file without .png extension
         if not filename.endswith('png'):
             files.remove(filename)
@@ -67,7 +68,7 @@ def parse_data():
     view_code = []
     entropy = []
     if args.verbose:
-        for filename in tqdm(files):
+        for filename in tqdm(files[:1200]):
             value_string = filename.replace(".png", "")
             label = value_string.split("_")[0]
             if label == "night":
