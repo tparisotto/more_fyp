@@ -1,6 +1,5 @@
 import os
 import sys
-import glob
 import argparse
 from datetime import datetime
 import numpy as np
@@ -11,12 +10,12 @@ import scipy.signal as sig
 import utility
 from tqdm import tqdm, trange
 import trimesh
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+# import tensorflow as tf
+# from tensorflow import keras
+# from tensorflow.keras import layers
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
-print(f"Tensorflow v{tf.__version__}\n")
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
+# print(f"Tensorflow v{tf.__version__}\n")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--data', type=str, required=True)
@@ -42,29 +41,29 @@ MN_DIR = os.path.join(BASE_DIR, args.modelnet_path)
 NUM_VIEWS = 60
 SAMPLE_RATE = args.sample_rate
 SPLIT = args.split
-METRICS = [
-    keras.metrics.TruePositives(name='tp'),
-    keras.metrics.FalsePositives(name='fp'),
-    keras.metrics.TrueNegatives(name='tn'),
-    keras.metrics.FalseNegatives(name='fn'),
-    keras.metrics.BinaryAccuracy(name='accuracy'),
-    keras.metrics.Precision(name='precision'),
-    keras.metrics.Recall(name='recall'),
-    keras.metrics.AUC(name='auc'),
-]
+# METRICS = [
+#     keras.metrics.TruePositives(name='tp'),
+#     keras.metrics.FalsePositives(name='fp'),
+#     keras.metrics.TrueNegatives(name='tn'),
+#     keras.metrics.FalseNegatives(name='fn'),
+#     keras.metrics.BinaryAccuracy(name='accuracy'),
+#     keras.metrics.Precision(name='precision'),
+#     keras.metrics.Recall(name='recall'),
+#     keras.metrics.AUC(name='auc'),
+# ]
 
 
-class OrthogonalRegularizer(keras.regularizers.Regularizer):
-    def __init__(self, num_features, l2reg=0.001):
-        self.num_features = num_features
-        self.l2reg = l2reg
-        self.eye = tf.eye(num_features)
-
-    def __call__(self, x):
-        x = tf.reshape(x, (-1, self.num_features, self.num_features))
-        xxt = tf.tensordot(x, x, axes=(2, 2))
-        xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
-        return tf.reduce_sum(self.l2reg * tf.square(xxt - self.eye))
+# class OrthogonalRegularizer(keras.regularizers.Regularizer):
+#     def __init__(self, num_features, l2reg=0.001):
+#         self.num_features = num_features
+#         self.l2reg = l2reg
+#         self.eye = tf.eye(num_features)
+#
+#     def __call__(self, x):
+#         x = tf.reshape(x, (-1, self.num_features, self.num_features))
+#         xxt = tf.tensordot(x, x, axes=(2, 2))
+#         xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
+#         return tf.reduce_sum(self.l2reg * tf.square(xxt - self.eye))
 
 
 def parse_data():
@@ -214,65 +213,65 @@ def load_dataset(data, num_points):
     return x, y
 
 
-def conv_bn(x, filters):
-    x = layers.Conv1D(filters, kernel_size=1, padding="valid")(x)
-    x = layers.BatchNormalization(momentum=0.0)(x)
-    return layers.Activation("relu")(x)
+# def conv_bn(x, filters):
+#     x = layers.Conv1D(filters, kernel_size=1, padding="valid")(x)
+#     x = layers.BatchNormalization(momentum=0.0)(x)
+#     return layers.Activation("relu")(x)
+#
+#
+# def dense_bn(x, filters):
+#     x = layers.Dense(filters)(x)
+#     x = layers.BatchNormalization(momentum=0.0)(x)
+#     return layers.Activation("relu")(x)
+#
+#
+# def tnet(inputs, num_features):
+#     bias = keras.initializers.Constant(np.eye(num_features).flatten())
+#     reg = OrthogonalRegularizer(num_features)
+#
+#     x = conv_bn(inputs, 32)
+#     x = conv_bn(x, 64)
+#     x = conv_bn(x, 512)
+#     x = layers.GlobalMaxPooling1D()(x)
+#     x = dense_bn(x, 256)
+#     x = dense_bn(x, 128)
+#     x = layers.Dense(
+#         num_features * num_features,
+#         kernel_initializer="zeros",
+#         bias_initializer=bias,
+#         activity_regularizer=reg,
+#     )(x)
+#     feat_T = layers.Reshape((num_features, num_features))(x)
+#     return layers.Dot(axes=(2, 1))([inputs, feat_T])
 
 
-def dense_bn(x, filters):
-    x = layers.Dense(filters)(x)
-    x = layers.BatchNormalization(momentum=0.0)(x)
-    return layers.Activation("relu")(x)
-
-
-def tnet(inputs, num_features):
-    bias = keras.initializers.Constant(np.eye(num_features).flatten())
-    reg = OrthogonalRegularizer(num_features)
-
-    x = conv_bn(inputs, 32)
-    x = conv_bn(x, 64)
-    x = conv_bn(x, 512)
-    x = layers.GlobalMaxPooling1D()(x)
-    x = dense_bn(x, 256)
-    x = dense_bn(x, 128)
-    x = layers.Dense(
-        num_features * num_features,
-        kernel_initializer="zeros",
-        bias_initializer=bias,
-        activity_regularizer=reg,
-    )(x)
-    feat_T = layers.Reshape((num_features, num_features))(x)
-    return layers.Dot(axes=(2, 1))([inputs, feat_T])
-
-
-def generate_pointnet():
-    inputs = keras.Input(shape=(args.points, 3))
-
-    x = tnet(inputs, 3)
-    x = conv_bn(x, 32)
-    x = conv_bn(x, 32)
-    x = tnet(x, 32)
-    x = conv_bn(x, 32)
-    x = conv_bn(x, 64)
-    x = conv_bn(x, 512)
-    x = layers.GlobalMaxPooling1D()(x)
-    x = dense_bn(x, 256)
-    x = layers.Dropout(0.3)(x)
-    x = dense_bn(x, 128)
-    x = layers.Dropout(0.3)(x)
-
-    outputs = layers.Dense(NUM_VIEWS, activation="sigmoid")(x)
-
-    model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
-    model.compile(
-        loss="binary_crossentropy",
-        optimizer=keras.optimizers.Adam(learning_rate=0.001),
-        metrics=METRICS,
-    )
-    model.summary()
-
-    return model
+# def generate_pointnet():
+#     inputs = keras.Input(shape=(args.points, 3))
+#
+#     x = tnet(inputs, 3)
+#     x = conv_bn(x, 32)
+#     x = conv_bn(x, 32)
+#     x = tnet(x, 32)
+#     x = conv_bn(x, 32)
+#     x = conv_bn(x, 64)
+#     x = conv_bn(x, 512)
+#     x = layers.GlobalMaxPooling1D()(x)
+#     x = dense_bn(x, 256)
+#     x = layers.Dropout(0.3)(x)
+#     x = dense_bn(x, 128)
+#     x = layers.Dropout(0.3)(x)
+#
+#     outputs = layers.Dense(NUM_VIEWS, activation="sigmoid")(x)
+#
+#     model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
+#     model.compile(
+#         loss="binary_crossentropy",
+#         optimizer=keras.optimizers.Adam(learning_rate=0.001),
+#         metrics=METRICS,
+#     )
+#     model.summary()
+#
+#     return model
 
 
 def main():
