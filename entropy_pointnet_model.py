@@ -78,7 +78,7 @@ def parse_data():
             phi.append(int(value_string[-3]))
             theta.append(int(value_string[-5]))
             object_index.append(value_string[-7])
-            img = plt.imread(os.path.join(DATA_DIR, filename))[:, :, 0]  # images in grayscale so every channel is the same
+            img = plt.imread(os.path.join(DATA_DIR, filename))
             entropy.append(shannon_entropy(img))
     else:
         for filename in files:
