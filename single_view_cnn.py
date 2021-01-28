@@ -15,6 +15,8 @@ parser.add_argument("train_data")
 parser.add_argument("test_data")
 parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--epochs", type=int, default=3)
+parser.add_argument("--train_sample_rate", type=float, default=10)
+parser.add_argument("--test_sample_rate", type=float, default=100)
 parser.add_argument("-a", "--architecture", default="vgg",
                     choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'light'])
 parser.add_argument("-o", "--out", default="./")
@@ -33,7 +35,7 @@ for filename in TRAIN_FILES:  # Removes file without .png extension
         TRAIN_FILES.remove(filename)
 np.random.shuffle(TRAIN_FILES)
 NUM_OBJECTS_TRAIN = len(TRAIN_FILES)
-TRAIN_FILTER = 10
+TRAIN_FILTER = args.train_sample_rate
 
 print("[INFO] Processing validation data..")
 TEST_DATA_PATH = args.test_data
@@ -43,7 +45,7 @@ for filename in TEST_FILES:
         TEST_FILES.remove(filename)
 np.random.shuffle(TEST_FILES)
 NUM_OBJECTS_TEST = len(TEST_FILES)
-TEST_FILTER = 100
+TEST_FILTER = args.test_sample_rate
 
 print()
 os.mkdir(MODEL_DIR)
