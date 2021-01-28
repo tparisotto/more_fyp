@@ -85,7 +85,7 @@ def data_loader_train():
             file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
             x = keras.preprocessing.image.load_img(file_path,
                                                    color_mode='rgb',
-                                                   target_size=(224, 300),
+                                                   target_size=(224, 224),
                                                    interpolation='nearest')
             x = keras.preprocessing.image.img_to_array(x)
             label_class = TRAIN_FILES[i].split("_")[0]
@@ -103,7 +103,7 @@ def data_loader_test():
             file_path = os.path.join(TEST_DATA_PATH, TEST_FILES[i])
             x = keras.preprocessing.image.load_img(file_path,
                                                    color_mode='rgb',
-                                                   target_size=(224, 300),
+                                                   target_size=(224, 224),
                                                    interpolation='nearest')
             x = keras.preprocessing.image.img_to_array(x)
             label_class = TEST_FILES[i].split("_")[0]
@@ -117,7 +117,7 @@ def data_loader_test():
 def dataset_generator_train():
     dataset = tf.data.Dataset.from_generator(data_loader_train,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([224, 300, 3]),
+                                             output_shapes=(tf.TensorShape([224, 224, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -127,7 +127,7 @@ def dataset_generator_train():
 def dataset_generator_test():
     dataset = tf.data.Dataset.from_generator(data_loader_test,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([224, 300, 3]),
+                                             output_shapes=(tf.TensorShape([224, 224, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -135,7 +135,7 @@ def dataset_generator_test():
 
 
 def generate_cnn(app="efficientnet"):
-    inputs = keras.Input(shape=(224, 300, 3))
+    inputs = keras.Input(shape=(224, 224, 3))
 
     if app == "vgg":
         net = keras.applications.VGG16(include_top=False,
