@@ -26,7 +26,7 @@ def normalize3d(vector):
 
 def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis = o3d.visualization.Visualizer()
-    vis.create_window(width=640, height=480, visible=False)
+    vis.create_window(width=224, height=224, visible=False)
     vis.add_geometry(pcd)
     # Rotate back from last rotation
     R_0 = pcd.get_rotation_matrix_from_xyz(last_rot)
@@ -39,7 +39,7 @@ def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
     vis.update_renderer()
     vis.capture_depth_image(
         "{}/tmp/{}_{}_x_{}_y_{}.png".format(BASE_DIR, label, VIEW_INDEX, -round(np.rad2deg(rot_xyz[0])),
-                                            round(np.rad2deg(rot_xyz[2]))), False)
+                                            round(np.rad2deg(rot_xyz[2]))), depth_scale=10000)
     vis.destroy_window()
 
 
@@ -51,8 +51,10 @@ for cur in os.listdir(DATA_PATH):
 TMP_DIR = os.path.join(BASE_DIR, "tmp")
 if os.path.exists(TMP_DIR):
     shutil.rmtree(TMP_DIR)
+    os.makedirs(TMP_DIR)
 else:
-    os.mkdir('./tmp')
+    os.makedirs(TMP_DIR)
+
 for label in labels:
     OBJECT_INDEX = 1
     files = os.listdir(os.path.join(DATA_PATH, label, "train"))
@@ -69,7 +71,7 @@ for label in labels:
         mesh.vertices = normalize3d(mesh.vertices)
         mesh.compute_vertex_normals()
 
-        print(f"Current Object: {label}_{OBJECT_INDEX:04}")
+        print(f"Current Object: {file}")
 
         rotations = []
         for j in range(0, N_VIEWS_H):
@@ -116,9 +118,9 @@ for label in labels:
                              "entropy": entropy})
         if FIRST_OBJECT == 1:  # Create the main DataFrame and csv, next ones will be appended
             FIRST_OBJECT = 0
-            data.to_csv(os.path.join(BASE_DIR, "dataset_entropy.csv"), index=False)
+            data.to_csv(os.path.join(BASE_DIR, "dataset_entropy_v2.csv"), index=False)
         else:
-            data.to_csv(os.path.join(BASE_DIR, "dataset_entropy.csv"), index=False, mode='a', header=False)
+            data.to_csv(os.path.join(BASE_DIR, "dataset_entropy_v2.csv"), index=False, mode='a', header=False)
 
         for im in os.listdir(TMP_DIR):
             os.remove(os.path.join(TMP_DIR, im))
