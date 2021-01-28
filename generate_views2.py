@@ -22,7 +22,7 @@ import argparse
 from open3d import *
 import open3d as o3d
 import numpy as np
-import cv2
+# import cv2
 from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
