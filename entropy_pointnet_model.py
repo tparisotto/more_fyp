@@ -283,7 +283,7 @@ def generate_pointnet():
     model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
     model.compile(
         loss="binary_crossentropy",
-        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        optimizer=keras.optimizers.Adam(learning_rate=1e-5),
         metrics=METRICS,
     )
     model.summary()
