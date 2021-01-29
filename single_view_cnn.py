@@ -96,7 +96,7 @@ def data_loader_test():
     labels_dict = utility.get_label_dict()
     for i in range(NUM_OBJECTS_TEST):
         if i % TEST_FILTER == 0:
-            idx = np.random.randint(0, NUM_OBJECTS_TRAIN)
+            idx = np.random.randint(0, NUM_OBJECTS_TEST)
             file_path = os.path.join(TEST_DATA_PATH, TEST_FILES[idx])
             # x = keras.preprocessing.image.load_img(file_path,
             #                                        color_mode='grayscale',
