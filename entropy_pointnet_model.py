@@ -77,6 +77,8 @@ class OrthogonalRegularizer(keras.regularizers.Regularizer):
         xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
         return tf.reduce_sum(self.l2reg * tf.square(xxt - self.eye))
 
+    def get_config(self):
+        return {'num_features': int(self.num_features), 'l2reg': float(self.l2reg)}
 
 def parse_data():
     files = os.listdir(DATA_DIR)
