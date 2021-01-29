@@ -290,18 +290,20 @@ def main():
         data = parse_data()
     else:
         data = pd.read_csv(args.load_csv)
+        print("[INFO] CSV correctly loaded.")
     if args.save_csv is not None:
         data.to_csv(args.save_csv, index=False)
+        print(f"[INFO] CSV saved in {args.save_csv}")
 
     if args.load_npz is None:
         x, y = load_dataset(data, args.points)
     else:
         x = np.load(args.load_npz)["x"]
         y = np.load(args.load_npz)["y"]
+        print("[INFO] Dataset correctly loaded.")
     if args.save_npz is not None:
         np.savez_compressed(args.save_npz, x=x, y=y)
-
-    print("[INFO] Dataset correctly loaded.")
+        print(f"[INFO] Numpy dataset saved in {args.save_npz}")
 
     model = generate_pointnet()
     history = model.fit(x, y,
@@ -311,6 +313,7 @@ def main():
                         callbacks=CALLBACKS)
     hist_df = pd.DataFrame(history.history)
     hist_df.to_csv(os.path.join(MODEL_DIR, f"pointnet_history-{TIMESTAMP}.csv"))
+    print(f"[INFO] Model and logs saved in {MODEL_DIR}")
 
 
 if __name__ == '__main__':
