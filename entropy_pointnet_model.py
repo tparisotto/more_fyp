@@ -87,7 +87,7 @@ def parse_data():
     for filename in files:  # Removes file without .png extension
         if not filename.endswith('png'):
             files.remove(filename)
-    files = files[::SAMPLE_RATE]
+    # files = files[::SAMPLE_RATE]
 
     labels = []
     object_index = []
@@ -195,34 +195,38 @@ def load_dataset(data, num_points):
     y = []
     if args.verbose:
         for i in trange(num_objects):
-            entry = data.iloc[NUM_VIEWS * i]
-            file_path = os.path.join(MN_DIR, entry.label, "train", f"{entry.label}_{entry.object_index}.off")
-            mesh = trimesh.load(file_path)
-            bound = float(max(np.abs(np.max(mesh.vertices)), np.abs(np.min(mesh.vertices))))
-            mesh.apply_scale(1 / bound)  # Normalization within [-1, 1]
-            x_point_cloud = mesh.sample(num_points)
-            x.append(x_point_cloud)
+            if i % SAMPLE_RATE == 0:
+                entry = data.iloc[NUM_VIEWS * i]
+                file_path = os.path.join(MN_DIR, entry.label, "train", f"{entry.label}_{entry.object_index}.off")
+                mesh = trimesh.load(file_path)
+                bound = float(max(np.abs(np.max(mesh.vertices)), np.abs(np.min(mesh.vertices))))
+                mesh.apply_scale(1 / bound)  # Normalization within [-1, 1]
+                x_point_cloud = mesh.sample(num_points)
+                x.append(x_point_cloud)
         for i in trange(num_objects):
-            data_subset = data.iloc[
-                          NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
-            labels = get_vectors_from_view_labels(data_subset)
-            label_vectors = utility.view_vector(labels, NUM_VIEWS)
-            y.append(label_vectors)
+            if i % SAMPLE_RATE == 0:
+                data_subset = data.iloc[
+                              NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
+                labels = get_vectors_from_view_labels(data_subset)
+                label_vectors = utility.view_vector(labels, NUM_VIEWS)
+                y.append(label_vectors)
     else:
         for i in range(num_objects):
-            entry = data.iloc[NUM_VIEWS * i]
-            file_path = os.path.join(MN_DIR, entry.label, "train", f"{entry.label}_{entry.object_index:04}.off")
-            mesh = trimesh.load(file_path)
-            bound = float(max(np.abs(np.max(mesh.vertices)), np.abs(np.min(mesh.vertices))))
-            mesh.apply_scale(1 / bound)  # Normalization within [-1, 1]
-            x_point_cloud = mesh.sample(num_points)
-            x.append(x_point_cloud)
+            if i % SAMPLE_RATE == 0:
+                entry = data.iloc[NUM_VIEWS * i]
+                file_path = os.path.join(MN_DIR, entry.label, "train", f"{entry.label}_{entry.object_index:04}.off")
+                mesh = trimesh.load(file_path)
+                bound = float(max(np.abs(np.max(mesh.vertices)), np.abs(np.min(mesh.vertices))))
+                mesh.apply_scale(1 / bound)  # Normalization within [-1, 1]
+                x_point_cloud = mesh.sample(num_points)
+                x.append(x_point_cloud)
         for i in range(num_objects):
-            data_subset = data.iloc[
-                          NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
-            labels = get_vectors_from_view_labels(data_subset)
-            label_vectors = utility.view_vector(labels, NUM_VIEWS)
-            y.append(label_vectors)
+            if i % SAMPLE_RATE == 0:
+                data_subset = data.iloc[
+                              NUM_VIEWS * i:NUM_VIEWS * (i + 1)]  # each object is represented by $NUM_VIEWS entries
+                labels = get_vectors_from_view_labels(data_subset)
+                label_vectors = utility.view_vector(labels, NUM_VIEWS)
+                y.append(label_vectors)
     return x, y
 
 
