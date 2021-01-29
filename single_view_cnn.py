@@ -17,7 +17,7 @@ parser.add_argument("test_data")
 parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--epochs", type=int, default=3)
 parser.add_argument("--train_sample_rate", type=float, default=10)
-parser.add_argument("--test_sample_rate", type=float, default=100)
+parser.add_argument("--test_sample_rate", type=float, default=10)
 parser.add_argument("-a", "--architecture", default="vgg",
                     choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'light'])
 parser.add_argument("-o", "--out", default="./")
@@ -82,13 +82,12 @@ def data_loader_train():
         if i % TRAIN_FILTER == 0:
             file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
             x = cv2.imread(file_path)
-            x = x[:, :, 0]
             label_class = TRAIN_FILES[i].split("_")[0]
             if label_class == 'night':
                 label_class = 'night_stand'  # Quick fix for label parsing
             label_class = utility.int_to_1hot(labels_dict[label_class], 10)
             label_view = utility.int_to_1hot(int(TRAIN_FILES[i].split("_")[-1].split(".")[0]), 60)
-            yield np.resize(x, (224, 224, 1)), (label_class, label_view)
+            yield np.resize(x, (224, 224, 3)), (label_class, label_view)
 
 
 def data_loader_test():
@@ -102,19 +101,18 @@ def data_loader_test():
             #                                        interpolation='nearest')
             # x = keras.preprocessing.image.img_to_array(x)
             x = cv2.imread(file_path)
-            x = x[:, :, 0]
             label_class = TEST_FILES[i].split("_")[0]
             if label_class == 'night':
                 label_class = 'night_stand'  # Quick fix for label parsing
             label_class = utility.int_to_1hot(labels_dict[label_class], 10)
             label_view = utility.int_to_1hot(int(TEST_FILES[i].split("_")[-1].split(".")[0]), 60)
-            yield np.resize(x, (224, 224, 1)), (label_class, label_view)
+            yield np.resize(x, (224, 224, 3)), (label_class, label_view)
 
 
 def dataset_generator_train():
     dataset = tf.data.Dataset.from_generator(data_loader_train,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([224, 224, 1]),
+                                             output_shapes=(tf.TensorShape([224, 224, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -124,15 +122,15 @@ def dataset_generator_train():
 def dataset_generator_test():
     dataset = tf.data.Dataset.from_generator(data_loader_test,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([224, 224, 1]),
+                                             output_shapes=(tf.TensorShape([224, 224, 3]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
     return dataset
 
 
-def generate_cnn(app="efficientnet"):
-    inputs = keras.Input(shape=(224, 224, 1))
+def generate_cnn(app="light"):
+    inputs = keras.Input(shape=(224, 224, 3))
 
     if app == "vgg":
         net = keras.applications.VGG16(include_top=False,
@@ -164,20 +162,30 @@ def generate_cnn(app="efficientnet"):
         x = net(preprocessed)
 
     elif app == "light":
-        x = keras.layers.Conv2D(32, 5, 3, activation='relu')(inputs)
-        x = keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
-        x = keras.layers.Conv2D(32, 5, 3, activation='relu')(x)
-        x = keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
+        x = keras.layers.Conv2D(32, 3, padding='same', activation='relu')(inputs)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Conv2D(32, 5, 3, padding='same', activation='relu')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+        x = keras.layers.Dropout(0.25)(x)
+
+        x = keras.layers.Conv2D(32, 3, padding='same', activation='relu')(inputs)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Conv2D(32, 5, 3, padding='same', activation='relu')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+        x = keras.layers.Dropout(0.25)(x)
 
     x = layers.Flatten()(x)
-
+    x = layers.Dense(512, activation='relu')(x)
+    x = layers.BatchNormalization()(x)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer='adam', loss=losses, metrics=METRICS)
+    model.compile(optimizer=keras.optimizers.Adagrad(learning_rate=1e-4), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
