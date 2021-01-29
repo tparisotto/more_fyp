@@ -88,7 +88,7 @@ def data_loader_train():
                 label_class = 'night_stand'  # Quick fix for label parsing
             label_class = utility.int_to_1hot(labels_dict[label_class], 10)
             label_view = utility.int_to_1hot(int(TRAIN_FILES[i].split("_")[-1].split(".")[0]), 60)
-            yield x, (label_class, label_view)
+            yield np.resize(x, (224, 224, 1)), (label_class, label_view)
 
 
 def data_loader_test():
@@ -108,13 +108,13 @@ def data_loader_test():
                 label_class = 'night_stand'  # Quick fix for label parsing
             label_class = utility.int_to_1hot(labels_dict[label_class], 10)
             label_view = utility.int_to_1hot(int(TEST_FILES[i].split("_")[-1].split(".")[0]), 60)
-            yield x, (label_class, label_view)
+            yield np.resize(x, (224, 224, 1)), (label_class, label_view)
 
 
 def dataset_generator_train():
     dataset = tf.data.Dataset.from_generator(data_loader_train,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([224, 224]),
+                                             output_shapes=(tf.TensorShape([224, 224, 1]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -124,7 +124,7 @@ def dataset_generator_train():
 def dataset_generator_test():
     dataset = tf.data.Dataset.from_generator(data_loader_test,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([224, 224]),
+                                             output_shapes=(tf.TensorShape([224, 224, 1]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -132,7 +132,7 @@ def dataset_generator_test():
 
 
 def generate_cnn(app="efficientnet"):
-    inputs = keras.Input(shape=(224, 224))
+    inputs = keras.Input(shape=(224, 224, 1))
 
     if app == "vgg":
         net = keras.applications.VGG16(include_top=False,
