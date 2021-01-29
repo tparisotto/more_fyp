@@ -3,6 +3,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
 import numpy as np
+import cv2
 import utility
 import tensorflow as tf
 from tensorflow import keras
@@ -59,10 +60,7 @@ METRICS = [
 
 
 def scheduler(epoch, lr):
-    if epoch < 10:
-        return lr
-    else:
-        return lr * tf.math.exp(-0.1)
+    return lr * tf.math.exp(-0.1)
 
 
 CALLBACKS = [
@@ -74,7 +72,7 @@ CALLBACKS = [
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
-    tf.keras.callbacks.LearningRateScheduler(scheduler)
+    # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 
 
@@ -83,11 +81,8 @@ def data_loader_train():
     for i in range(NUM_OBJECTS_TRAIN):
         if i % TRAIN_FILTER == 0:
             file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
-            x = keras.preprocessing.image.load_img(file_path,
-                                                   color_mode='rgb',
-                                                   target_size=(224, 224),
-                                                   interpolation='nearest')
-            x = keras.preprocessing.image.img_to_array(x)
+            x = cv2.imread(file_path)
+            x = x[:, :, 0]
             label_class = TRAIN_FILES[i].split("_")[0]
             if label_class == 'night':
                 label_class = 'night_stand'  # Quick fix for label parsing
@@ -101,11 +96,13 @@ def data_loader_test():
     for i in range(NUM_OBJECTS_TEST):
         if i % TEST_FILTER == 0:
             file_path = os.path.join(TEST_DATA_PATH, TEST_FILES[i])
-            x = keras.preprocessing.image.load_img(file_path,
-                                                   color_mode='rgb',
-                                                   target_size=(224, 224),
-                                                   interpolation='nearest')
-            x = keras.preprocessing.image.img_to_array(x)
+            # x = keras.preprocessing.image.load_img(file_path,
+            #                                        color_mode='grayscale',
+            #                                        target_size=(224, 224),
+            #                                        interpolation='nearest')
+            # x = keras.preprocessing.image.img_to_array(x)
+            x = cv2.imread(file_path)
+            x = x[:, :, 0]
             label_class = TEST_FILES[i].split("_")[0]
             if label_class == 'night':
                 label_class = 'night_stand'  # Quick fix for label parsing
@@ -117,7 +114,7 @@ def data_loader_test():
 def dataset_generator_train():
     dataset = tf.data.Dataset.from_generator(data_loader_train,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([224, 224, 3]),
+                                             output_shapes=(tf.TensorShape([224, 224]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -127,7 +124,7 @@ def dataset_generator_train():
 def dataset_generator_test():
     dataset = tf.data.Dataset.from_generator(data_loader_test,
                                              output_types=(tf.float32, (tf.int16, tf.int16)),
-                                             output_shapes=(tf.TensorShape([224, 224, 3]),
+                                             output_shapes=(tf.TensorShape([224, 224]),
                                                             (tf.TensorShape([10]), tf.TensorShape([60]))))
     dataset = dataset.batch(BATCH_SIZE)
     dataset = dataset.repeat(EPOCHS)
@@ -135,7 +132,7 @@ def dataset_generator_test():
 
 
 def generate_cnn(app="efficientnet"):
-    inputs = keras.Input(shape=(224, 224, 3))
+    inputs = keras.Input(shape=(224, 224))
 
     if app == "vgg":
         net = keras.applications.VGG16(include_top=False,
@@ -173,6 +170,7 @@ def generate_cnn(app="efficientnet"):
         x = keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
 
     x = layers.Flatten()(x)
+
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
