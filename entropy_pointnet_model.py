@@ -197,7 +197,7 @@ def load_dataset(data, num_points):
         for i in trange(num_objects):
             if i % SAMPLE_RATE == 0:
                 entry = data.iloc[NUM_VIEWS * i]
-                file_path = os.path.join(MN_DIR, entry.label, "train", f"{entry.label}_{entry.object_index}.off")
+                file_path = os.path.join(MN_DIR, entry.label, "train", f"{entry.label}_{entry.object_index:04}.off")
                 mesh = trimesh.load(file_path)
                 bound = float(max(np.abs(np.max(mesh.vertices)), np.abs(np.min(mesh.vertices))))
                 mesh.apply_scale(1 / bound)  # Normalization within [-1, 1]
