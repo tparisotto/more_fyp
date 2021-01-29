@@ -35,9 +35,9 @@ args = parser.parse_args()
 
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 BASE_DIR = sys.path[0]
-DATA_DIR = os.path.join(BASE_DIR, args.data)
-MN_DIR = os.path.join(BASE_DIR, args.modelnet_path)
-MODEL_DIR = os.path.join(BASE_DIR, args.out, f"PointNet-{TIMESTAMP}")
+DATA_DIR = args.data
+MN_DIR = args.modelnet_path
+MODEL_DIR = os.path.join(args.out, f"PointNet-{TIMESTAMP}")
 NUM_VIEWS = 60
 SAMPLE_RATE = args.sample_rate
 SPLIT = args.split
@@ -291,15 +291,15 @@ def main():
     else:
         data = pd.read_csv(args.load_csv)
     if args.save_csv is not None:
-        data.to_csv(os.path.join(BASE_DIR, args.save_csv), index=False)
+        data.to_csv(args.save_csv, index=False)
 
     if args.load_npz is None:
         x, y = load_dataset(data, args.points)
     else:
-        x = np.load(os.path.join(BASE_DIR, args.load_npz))["x"]
-        y = np.load(os.path.join(BASE_DIR, args.load_npz))["y"]
+        x = np.load(args.load_npz)["x"]
+        y = np.load(args.load_npz)["y"]
     if args.save_npz is not None:
-        np.savez_compressed(os.path.join(BASE_DIR, args.save_npz), x=x, y=y)
+        np.savez_compressed(args.save_npz, x=x, y=y)
 
     print("[INFO] Dataset correctly loaded.")
 
