@@ -80,14 +80,15 @@ def data_loader_train():
     labels_dict = utility.get_label_dict()
     for i in range(NUM_OBJECTS_TRAIN):
         if i % TRAIN_FILTER == 0:
-            file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[i])
+            idx = np.random.randint(0, NUM_OBJECTS_TRAIN)
+            file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[idx])
             x = cv2.imread(file_path)
             # x = x[:, :, 0]
-            label_class = TRAIN_FILES[i].split("_")[0]
+            label_class = TRAIN_FILES[idx].split("_")[0]
             if label_class == 'night':
                 label_class = 'night_stand'  # Quick fix for label parsing
             label_class = utility.int_to_1hot(labels_dict[label_class], 10)
-            label_view = utility.int_to_1hot(int(TRAIN_FILES[i].split("_")[-1].split(".")[0]), 60)
+            label_view = utility.int_to_1hot(int(TRAIN_FILES[idx].split("_")[-1].split(".")[0]), 60)
             yield np.resize(x, (224, 224, 3)), (label_class, label_view)
 
 
@@ -95,7 +96,8 @@ def data_loader_test():
     labels_dict = utility.get_label_dict()
     for i in range(NUM_OBJECTS_TEST):
         if i % TEST_FILTER == 0:
-            file_path = os.path.join(TEST_DATA_PATH, TEST_FILES[i])
+            idx = np.random.randint(0, NUM_OBJECTS_TRAIN)
+            file_path = os.path.join(TEST_DATA_PATH, TEST_FILES[idx])
             # x = keras.preprocessing.image.load_img(file_path,
             #                                        color_mode='grayscale',
             #                                        target_size=(224, 224),
@@ -103,11 +105,11 @@ def data_loader_test():
             # x = keras.preprocessing.image.img_to_array(x)
             x = cv2.imread(file_path)
             # x = x[:, :, 0]
-            label_class = TEST_FILES[i].split("_")[0]
+            label_class = TEST_FILES[idx].split("_")[0]
             if label_class == 'night':
                 label_class = 'night_stand'  # Quick fix for label parsing
             label_class = utility.int_to_1hot(labels_dict[label_class], 10)
-            label_view = utility.int_to_1hot(int(TEST_FILES[i].split("_")[-1].split(".")[0]), 60)
+            label_view = utility.int_to_1hot(int(TEST_FILES[idx].split("_")[-1].split(".")[0]), 60)
             yield np.resize(x, (224, 224, 3)), (label_class, label_view)
 
 
