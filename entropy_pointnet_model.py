@@ -10,60 +10,72 @@ import scipy.signal as sig
 import utility
 from tqdm import tqdm, trange
 import trimesh
-# import tensorflow as tf
-# from tensorflow import keras
-# from tensorflow.keras import layers
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
 
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
-# print(f"Tensorflow v{tf.__version__}\n")
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
+print(f"Tensorflow v{tf.__version__}\n")
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--data', type=str, required=True)
+parser.add_argument('-d', '--data', type=str, help="Folder with view-dataset")
 parser.add_argument('-b', '--batch_size', type=int, default=8)
 parser.add_argument('-e', '--epochs', type=int, default=5)
-parser.add_argument('-p', '--points', type=int, default=2048)
+parser.add_argument('-p', '--points', type=int, default=2048, help="Sample points of the point cloud.")
 parser.add_argument('-s', '--split', type=float, default=0.9)
-parser.add_argument('--sample_rate', type=float, default=10)
+parser.add_argument('--sample_rate', type=float, default=10, help="Filter factor for the view-dataset")
 parser.add_argument('-v', '--verbose', action='store_true')
+parser.add_argument('--out', default="./")
 parser.add_argument('--save_csv')
 parser.add_argument('--save_npz')
-parser.add_argument('--save_model', action='store_true')
-parser.add_argument('--save_history', action='store_true')
 parser.add_argument('--load_csv')
 parser.add_argument('--load_npz')
-parser.add_argument('--modelnet_path', required=True)
+parser.add_argument('--modelnet_path')
 args = parser.parse_args()
 
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 BASE_DIR = sys.path[0]
 DATA_DIR = os.path.join(BASE_DIR, args.data)
 MN_DIR = os.path.join(BASE_DIR, args.modelnet_path)
+MODEL_DIR = os.path.join(BASE_DIR, args.out, f"PointNet-{TIMESTAMP}")
 NUM_VIEWS = 60
 SAMPLE_RATE = args.sample_rate
 SPLIT = args.split
-# METRICS = [
-#     keras.metrics.TruePositives(name='tp'),
-#     keras.metrics.FalsePositives(name='fp'),
-#     keras.metrics.TrueNegatives(name='tn'),
-#     keras.metrics.FalseNegatives(name='fn'),
-#     keras.metrics.BinaryAccuracy(name='accuracy'),
-#     keras.metrics.Precision(name='precision'),
-#     keras.metrics.Recall(name='recall'),
-#     keras.metrics.AUC(name='auc'),
-# ]
+METRICS = [
+    keras.metrics.TruePositives(name='tp'),
+    keras.metrics.FalsePositives(name='fp'),
+    keras.metrics.TrueNegatives(name='tn'),
+    keras.metrics.FalseNegatives(name='fn'),
+    keras.metrics.BinaryAccuracy(name='accuracy'),
+    keras.metrics.Precision(name='precision'),
+    keras.metrics.Recall(name='recall'),
+    keras.metrics.AUC(name='auc'),
+]
+
+CALLBACKS = [
+    # tf.keras.callbacks.EarlyStopping(patience=3),
+    tf.keras.callbacks.ModelCheckpoint(
+        filepath=os.path.join(MODEL_DIR, 'pointnet_epoch-{epoch:02d}_loss-{val_loss:.3f}.h5'),
+        monitor='val_loss',
+        mode='min',
+        save_best_only=True,
+        save_freq='epoch'),
+    tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs/')),
+    # tf.keras.callbacks.LearningRateScheduler(scheduler)
+]
 
 
-# class OrthogonalRegularizer(keras.regularizers.Regularizer):
-#     def __init__(self, num_features, l2reg=0.001):
-#         self.num_features = num_features
-#         self.l2reg = l2reg
-#         self.eye = tf.eye(num_features)
-#
-#     def __call__(self, x):
-#         x = tf.reshape(x, (-1, self.num_features, self.num_features))
-#         xxt = tf.tensordot(x, x, axes=(2, 2))
-#         xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
-#         return tf.reduce_sum(self.l2reg * tf.square(xxt - self.eye))
+class OrthogonalRegularizer(keras.regularizers.Regularizer):
+    def __init__(self, num_features, l2reg=0.001):
+        self.num_features = num_features
+        self.l2reg = l2reg
+        self.eye = tf.eye(num_features)
+
+    def __call__(self, x):
+        x = tf.reshape(x, (-1, self.num_features, self.num_features))
+        xxt = tf.tensordot(x, x, axes=(2, 2))
+        xxt = tf.reshape(xxt, (-1, self.num_features, self.num_features))
+        return tf.reduce_sum(self.l2reg * tf.square(xxt - self.eye))
 
 
 def parse_data():
@@ -107,8 +119,7 @@ def parse_data():
             phi.append(int(value_string[-3]))
             theta.append(int(value_string[-5]))
             object_index.append(value_string[-7])
-            img = plt.imread(os.path.join(DATA_DIR, filename))[:, :,
-                  0]  # images in grayscale so every channel is the same
+            img = plt.imread(os.path.join(DATA_DIR, filename))[:, :, 0]  # every channel is the same
             entropy.append(shannon_entropy(img))
     df = pd.DataFrame({"label": labels,
                        "object_index": object_index,
@@ -213,65 +224,65 @@ def load_dataset(data, num_points):
     return x, y
 
 
-# def conv_bn(x, filters):
-#     x = layers.Conv1D(filters, kernel_size=1, padding="valid")(x)
-#     x = layers.BatchNormalization(momentum=0.0)(x)
-#     return layers.Activation("relu")(x)
-#
-#
-# def dense_bn(x, filters):
-#     x = layers.Dense(filters)(x)
-#     x = layers.BatchNormalization(momentum=0.0)(x)
-#     return layers.Activation("relu")(x)
-#
-#
-# def tnet(inputs, num_features):
-#     bias = keras.initializers.Constant(np.eye(num_features).flatten())
-#     reg = OrthogonalRegularizer(num_features)
-#
-#     x = conv_bn(inputs, 32)
-#     x = conv_bn(x, 64)
-#     x = conv_bn(x, 512)
-#     x = layers.GlobalMaxPooling1D()(x)
-#     x = dense_bn(x, 256)
-#     x = dense_bn(x, 128)
-#     x = layers.Dense(
-#         num_features * num_features,
-#         kernel_initializer="zeros",
-#         bias_initializer=bias,
-#         activity_regularizer=reg,
-#     )(x)
-#     feat_T = layers.Reshape((num_features, num_features))(x)
-#     return layers.Dot(axes=(2, 1))([inputs, feat_T])
+def conv_bn(x, filters):
+    x = layers.Conv1D(filters, kernel_size=1, padding="valid")(x)
+    x = layers.BatchNormalization(momentum=0.0)(x)
+    return layers.Activation("relu")(x)
 
 
-# def generate_pointnet():
-#     inputs = keras.Input(shape=(args.points, 3))
-#
-#     x = tnet(inputs, 3)
-#     x = conv_bn(x, 32)
-#     x = conv_bn(x, 32)
-#     x = tnet(x, 32)
-#     x = conv_bn(x, 32)
-#     x = conv_bn(x, 64)
-#     x = conv_bn(x, 512)
-#     x = layers.GlobalMaxPooling1D()(x)
-#     x = dense_bn(x, 256)
-#     x = layers.Dropout(0.3)(x)
-#     x = dense_bn(x, 128)
-#     x = layers.Dropout(0.3)(x)
-#
-#     outputs = layers.Dense(NUM_VIEWS, activation="sigmoid")(x)
-#
-#     model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
-#     model.compile(
-#         loss="binary_crossentropy",
-#         optimizer=keras.optimizers.Adam(learning_rate=0.001),
-#         metrics=METRICS,
-#     )
-#     model.summary()
-#
-#     return model
+def dense_bn(x, filters):
+    x = layers.Dense(filters)(x)
+    x = layers.BatchNormalization(momentum=0.0)(x)
+    return layers.Activation("relu")(x)
+
+
+def tnet(inputs, num_features):
+    bias = keras.initializers.Constant(np.eye(num_features).flatten())
+    reg = OrthogonalRegularizer(num_features)
+
+    x = conv_bn(inputs, 32)
+    x = conv_bn(x, 64)
+    x = conv_bn(x, 512)
+    x = layers.GlobalMaxPooling1D()(x)
+    x = dense_bn(x, 256)
+    x = dense_bn(x, 128)
+    x = layers.Dense(
+        num_features * num_features,
+        kernel_initializer="zeros",
+        bias_initializer=bias,
+        activity_regularizer=reg,
+    )(x)
+    feat_T = layers.Reshape((num_features, num_features))(x)
+    return layers.Dot(axes=(2, 1))([inputs, feat_T])
+
+
+def generate_pointnet():
+    inputs = keras.Input(shape=(args.points, 3))
+
+    x = tnet(inputs, 3)
+    x = conv_bn(x, 32)
+    x = conv_bn(x, 32)
+    x = tnet(x, 32)
+    x = conv_bn(x, 32)
+    x = conv_bn(x, 64)
+    x = conv_bn(x, 512)
+    x = layers.GlobalMaxPooling1D()(x)
+    x = dense_bn(x, 256)
+    x = layers.Dropout(0.3)(x)
+    x = dense_bn(x, 128)
+    x = layers.Dropout(0.3)(x)
+
+    outputs = layers.Dense(NUM_VIEWS, activation="sigmoid")(x)
+
+    model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
+    model.compile(
+        loss="binary_crossentropy",
+        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        metrics=METRICS,
+    )
+    model.summary()
+
+    return model
 
 
 def main():
@@ -290,7 +301,16 @@ def main():
     if args.save_npz is not None:
         np.savez_compressed(os.path.join(BASE_DIR, args.save_npz), x=x, y=y)
 
-    print("[INFO] Done.")
+    print("[INFO] Dataset correctly loaded.")
+
+    model = generate_pointnet()
+    history = model.fit(x, y,
+                        batch_size=args.batch_size,
+                        epochs=args.epochs,
+                        validation_split=args.split,
+                        callbacks=CALLBACKS)
+    hist_df = pd.DataFrame(history.history)
+    hist_df.to_csv(os.path.join(MODEL_DIR, f"pointnet_history-{TIMESTAMP}.csv"))
 
 
 if __name__ == '__main__':

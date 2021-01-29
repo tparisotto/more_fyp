@@ -203,7 +203,7 @@ def main():
                         callbacks=CALLBACKS,
                         validation_data=test_data)
     hist_df = pd.DataFrame(history.history)
-    hist_df.to_csv(os.path.join(f"{TIMESTAMP}_training_history.csv"))
+    hist_df.to_csv(os.path.join(MODEL_DIR, f"{TIMESTAMP}_training_history.csv"))
 
 
 if __name__ == '__main__':
