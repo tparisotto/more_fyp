@@ -61,7 +61,9 @@ METRICS = [
 
 
 def scheduler(epoch, lr):
-    if epoch < 10:
+    if epoch <= 10:
+        return 1e-3
+    elif 10 < epoch <= 30:
         return 1e-4
     else:
         return 1e-5
