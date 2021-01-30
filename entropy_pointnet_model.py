@@ -31,6 +31,7 @@ parser.add_argument('--save_csv')
 parser.add_argument('--save_npz')
 parser.add_argument('--load_csv')
 parser.add_argument('--load_npz')
+parser.add_argument('--train', action='store_true')
 parser.add_argument('--modelnet_path')
 args = parser.parse_args()
 
@@ -318,15 +319,16 @@ def main():
         np.savez_compressed(args.save_npz, x=x, y=y)
         print(f"[INFO] Numpy dataset saved in {args.save_npz}")
 
-    model = generate_pointnet()
-    history = model.fit(x, y,
-                        batch_size=args.batch_size,
-                        epochs=args.epochs,
-                        validation_split=args.split,
-                        callbacks=CALLBACKS)
-    hist_df = pd.DataFrame(history.history)
-    hist_df.to_csv(os.path.join(MODEL_DIR, f"pointnet_history-{TIMESTAMP}.csv"))
-    print(f"[INFO] Model and logs saved in {MODEL_DIR}")
+    if args.train:
+        model = generate_pointnet()
+        history = model.fit(x, y,
+                            batch_size=args.batch_size,
+                            epochs=args.epochs,
+                            validation_split=args.split,
+                            callbacks=CALLBACKS)
+        hist_df = pd.DataFrame(history.history)
+        hist_df.to_csv(os.path.join(MODEL_DIR, f"pointnet_history-{TIMESTAMP}.csv"))
+        print(f"[INFO] Model and logs saved in {MODEL_DIR}")
 
 
 if __name__ == '__main__':
