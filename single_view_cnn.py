@@ -203,6 +203,7 @@ def main():
     test_data = dataset_generator_test()
     if args.load_model is not None:
         model.load_weights(args.load_model)
+        print(f"[INFO] Model {args.load_model} correctly loaded.")
     history = model.fit(train_data_gen,
                         shuffle=True,
                         steps_per_epoch=num_batches,
