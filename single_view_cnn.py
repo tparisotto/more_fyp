@@ -21,6 +21,7 @@ parser.add_argument("--test_sample_rate", type=float, default=10)
 parser.add_argument("-a", "--architecture", default="vgg",
                     choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'light'])
 parser.add_argument("-o", "--out", default="./")
+parser.add_argument("--load_model")
 args = parser.parse_args()
 
 EPOCHS = args.epochs
@@ -200,6 +201,8 @@ def main():
     num_batches = int((NUM_OBJECTS_TRAIN / TRAIN_FILTER) / BATCH_SIZE)
     train_data_gen = dataset_generator_train()
     test_data = dataset_generator_test()
+    if args.load_model is not None:
+        model.load_weights(args.load_model)
     history = model.fit(train_data_gen,
                         shuffle=True,
                         steps_per_epoch=num_batches,
