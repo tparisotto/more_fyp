@@ -60,7 +60,10 @@ METRICS = [
 
 
 def scheduler(epoch, lr):
-    return lr * tf.math.exp(-0.1)
+    if epoch < 10:
+        return 1e-4
+    else:
+        return 1e-5
 
 
 CALLBACKS = [
@@ -72,7 +75,7 @@ CALLBACKS = [
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir='./logs'),
-    # tf.keras.callbacks.LearningRateScheduler(scheduler)
+    tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 
 
@@ -187,7 +190,7 @@ def generate_cnn(app="vgg"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(optimizer=keras.optimizers.Adagrad(learning_rate=1e-5), loss=losses, metrics=METRICS)
+    model.compile('adagrad', loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 

@@ -21,7 +21,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--data', type=str, help="Folder with view-dataset")
 parser.add_argument('-b', '--batch_size', type=int, default=8)
 parser.add_argument('-e', '--epochs', type=int, default=5)
-parser.add_argument('-p', '--points', type=int, default=2048, help="Sample points of the point cloud.")
+parser.add_argument('--lr', type=float, default=1e-4)
+parser.add_argument('-p', '--points', type=int, default=8192, help="Sample points of the point cloud.")
 parser.add_argument('-s', '--split', type=float, default=0.1)
 parser.add_argument('--sample_rate', type=float, default=10, help="Filter factor for the view-dataset")
 parser.add_argument('-v', '--verbose', action='store_true')
@@ -52,6 +53,11 @@ METRICS = [
     keras.metrics.AUC(name='auc'),
 ]
 
+
+def scheduler(epoch, lr):
+    return lr * tf.math.exp(-0.1)
+
+
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=3),
     tf.keras.callbacks.ModelCheckpoint(
@@ -79,6 +85,7 @@ class OrthogonalRegularizer(keras.regularizers.Regularizer):
 
     def get_config(self):
         return {'num_features': int(self.num_features), 'l2reg': float(self.l2reg)}
+
 
 def parse_data():
     files = os.listdir(DATA_DIR)
@@ -283,7 +290,7 @@ def generate_pointnet():
     model = keras.Model(inputs=inputs, outputs=outputs, name="pointnet")
     model.compile(
         loss="binary_crossentropy",
-        optimizer=keras.optimizers.Adam(learning_rate=1e-5),
+        optimizer=keras.optimizers.Adam(learning_rate=args.lr),
         metrics=METRICS,
     )
     model.summary()
