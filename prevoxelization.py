@@ -2,14 +2,17 @@ import os
 import sys
 import numpy as np
 import open3d as o3d
+import argparse
 
-VOXEL_SIZE = 0.02
-BASE_DIR = sys.path[0]
-DATA_PATH = BASE_DIR + '/../data/modelnet10'
-# mesh_filenames = [BASE_DIR + '/../data/modelnet10/bathtub/train/bathtub_0023.off']
-#, BASE_DIR + '/../data/modelnet10/chair/train/chair_0123.off',
-# BASE_DIR + '/../data/modelnet10/bathtub/train/bathtub_0043.off']
+parser = argparse.ArgumentParser()
+parser.add_argument('--data', required=True, help='path to modelnet folder')
+parser.add_argument('--out', required=True, help='specify folder to save output')
+parser.add_argument('--n_voxels', default=25, type=int)
+args = parser.parse_args()
 
+VOXEL_SIZE = float(1/args.n_voxels)
+DATA_PATH = args.data
+VOX_DIR = os.path.join(args.out, "voxel_data_v2")
 
 labels = []
 for cur in os.listdir(DATA_PATH):
@@ -17,24 +20,30 @@ for cur in os.listdir(DATA_PATH):
         labels.append(cur)
 labels.sort()
 
-VOX_DIR = os.path.join(BASE_DIR, "voxel_data")
 if os.path.exists(VOX_DIR):
-    for im in os.listdir(VOX_DIR):
-        os.remove(os.path.join(VOX_DIR, im))
+    print(f"[ERROR] Remove {VOX_DIR} before running.")
+    sys.exit()
 else:
-    os.mkdir('./voxel_data')
+    for lab in labels:
+        os.makedirs(os.path.join(VOX_DIR, lab, 'train'))
+        os.makedirs(os.path.join(VOX_DIR, lab, 'test'))
 
 for label in labels:
-    files = os.listdir(os.path.join(DATA_PATH, label, "train"))
-    files.sort()
-    for file in files:
+    files_train = os.listdir(os.path.join(DATA_PATH, label, "train"))
+    files_test = os.listdir(os.path.join(DATA_PATH, label, "test"))
+    files_train.sort()
+    files_test.sort()
+    for file in files_train:
         if not file.endswith('off'):
-            files.remove(file)
+            files_train.remove(file)
+    for file in files_test:
+        if not file.endswith('off'):
+            files_train.remove(file)
 
-    for file in files:
+    for file in files_train:
         filename = os.path.join(DATA_PATH, label, "train", file)
-        print(f"Elaborating file {file}...")
-        out_name = os.path.join(VOX_DIR, file.split(".")[0] + ".npy")
+        print(f"Elaborating file {filename}...")
+        out_name = os.path.join(VOX_DIR, label, 'train', file.split(".")[0] + ".npy")
         mesh = o3d.io.read_triangle_mesh(filename)
         mesh.scale(1 / np.max(mesh.get_max_bound() - mesh.get_min_bound()),
                    center=mesh.get_center())
@@ -47,7 +56,7 @@ for label in labels:
                                                                                     max_bound=np.array([0.5, 0.5, 0.5]))
         # voxel_grid = o3d.geometry.VoxelGrid.create_dense(origin=[0,0,0], voxel_size=0.02, width=1, height=1, depth=1)
         voxels = voxel_grid.get_voxels()
-        grid_size = int(1/VOXEL_SIZE)
+        grid_size = args.n_voxels
         mask = np.zeros((grid_size, grid_size, grid_size))
         for vox in voxels:
             mask[vox.grid_index[0], vox.grid_index[1], vox.grid_index[2]] = 1

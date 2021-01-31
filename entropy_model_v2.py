@@ -55,10 +55,20 @@ METRICS = [
     keras.metrics.Recall(name='recall'),
     keras.metrics.AUC(name='auc'),
 ]
+CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
+           'monitor', 'night_stand', 'sofa', 'table', 'toilet']
 
 
 def load_data(x_data, y_data):
-    x = np.load(x_data)
+    x = []
+    for lab in CLASSES:
+        for el in os.listdir(os.path.join(X_DATAPATH, lab, 'train')):
+            if 'binvox' in el:
+                with open(os.path.join(X_DATAPATH, lab, 'train', el), 'rb') as file:
+                    data = np.int32(binvox_rw.read_as_3d_array(file).data)
+                    padded_data = np.pad(data, 3, 'constant')
+                    x.append(padded_data)
+    x = np.array(x)
     y = np.load(y_data)
     num_objects = x.shape[0]
     input_shape = x.shape[1:]
@@ -77,28 +87,9 @@ def load_data(x_data, y_data):
     return x_train, y_train, x_test, y_test
 
 
-# def generate_cnn():
-#     model = keras.models.Sequential()
-#     model.add(layers.Reshape((50, 50, 50, 1), input_shape=(50, 50, 50)))
-#     model.add(layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same'))
-#
-#     model.add(layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same'))
-#     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
-#     model.add(layers.Dropout(0.25))
-#
-#     model.add(layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same'))
-#     model.add(layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same'))
-#     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
-#     model.add(layers.Dropout(0.25))
-#
-#     model.add(layers.Flatten())
-#     model.add(layers.Dense(384, activation='relu'))
-#     model.add(layers.Dropout(0.5))
-#     model.add(layers.Dense(60, activation='sigmoid'))
-#     return model
 def generate_cnn():
-    inputs = keras.Input(shape=(50, 50, 50))
-    x = layers.Reshape(target_shape=(50, 50, 50, 1))(inputs)
+    inputs = keras.Input(shape=(30, 30, 30))
+    x = layers.Reshape(target_shape=(30, 30, 30, 1))(inputs)
 
     x = layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same')(x)
@@ -141,8 +132,12 @@ def main():
     if args.save_history:
         utility.make_dir('./history')
         hist_df = pd.DataFrame(history.history)
-        hist_df.to_csv(os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv"))
-        print(f"[INFO] History saved to history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv")
+        hist_df.to_csv(
+            os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv"))
+        print(
+            f"[INFO] History saved to history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv")
+
+
 
 
 if __name__ == '__main__':

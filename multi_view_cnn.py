@@ -21,8 +21,12 @@ args = parser.parse_args()
 def main():
     print("[INFO] Prediction results:")
     images = []
+    true_labels = []
+    true_views = []
     for file in args.views:
         images.append(cv2.imread(file))
+        true_labels.append(os.path.split(file.split("_")[-8])[-1])
+        true_views.append(file.split("_")[-1].split(".")[0])
     model = keras.models.load_model(args.model)
     images = np.array(images)
     results = model.predict(images)
@@ -30,7 +34,7 @@ def main():
     views = results[1]
     dic = utility.get_label_dict(inverse=True)
     for i in range(len(views)):
-        print(dic[np.argmax(labels[i])], np.argmax(views[i]))
+        print(f"Predicted: {dic[np.argmax(labels[i])]}, {np.argmax(views[i])} - True: {true_labels[i]}, {true_views[i]}")
 
 
 if __name__ == "__main__":
