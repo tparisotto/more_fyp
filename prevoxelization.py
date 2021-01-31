@@ -12,7 +12,7 @@ args = parser.parse_args()
 
 VOXEL_SIZE = float(1/args.n_voxels)
 DATA_PATH = args.data
-VOX_DIR = os.path.join(args.out, "voxel_data_v2")
+VOX_DIR = os.path.join(args.out, f"voxel_data_{args.n_voxels}")
 
 labels = []
 for cur in os.listdir(DATA_PATH):
