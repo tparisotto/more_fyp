@@ -7,16 +7,25 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 import utility
+from collections import Counter
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--views', nargs='+')
 parser.add_argument('--model')
 args = parser.parse_args()
 
+idx2label = {}
+count = 0
+for theta in range(30, 151, 30):
+    for phi in range(0, 331, 30):
+        idx2label[count] = (theta, phi)
+        count += 1
 
-# TODO: load x models where x is the number of views received from the entropy model
-#     ensemble the results of the x networks, class=voting, pose=infer_from_views
+# TODO: Not sure if the offset as it is calculated here is correct, need to do some math.
 
+
+def most_common(lst):
+    return max(set(lst), key=lst.count)
 
 def main():
     print("[INFO] Prediction results:")
@@ -34,7 +43,18 @@ def main():
     views = results[1]
     dic = utility.get_label_dict(inverse=True)
     for i in range(len(views)):
-        print(f"Predicted: {dic[np.argmax(labels[i])]}, {np.argmax(views[i])} - True: {true_labels[i]}, {true_views[i]}")
+        print(f"Predicted: {dic[np.argmax(labels[i])]}, {idx2label[int(np.argmax(views[i]))]} - True: {true_labels[i]}, {idx2label[int(true_views[i])]}")
+
+    print(f"[INFO] Majority vote:")
+    labint = []
+    for el in labels:
+        labint.append(np.argmax(el))
+    print(f"    class: {dic[most_common(labint)]}")
+    view_offset = []
+    for i in range(len(views)):
+        view_offset.append(int(true_views[i]) - int(np.argmax(views[i])))
+    offset = np.array(idx2label[most_common(view_offset)])
+    print(f"    offset: theta={offset[0]} phi={offset[1]}")
 
 
 if __name__ == "__main__":

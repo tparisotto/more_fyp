@@ -5,19 +5,16 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import utility
-import binvox_rw
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import kerastuner as kt
+from kerastuner.tuners import Hyperband
 
 print(f"Tensorflow v{tf.__version__}\n")
 
-# TODO: The recall is the most important information since it defines how many of the positions it predicted are correct.
-#    try to get the best recall by changing the structure of the network.
-#   It might be necessary to change the format of the voxel data, or even recalibrate the entropies we use to determine
-#   the point of views.
 '''
 http://aguo.us/writings/classify-modelnet.html
 Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
@@ -33,17 +30,15 @@ parser.add_argument('-x', '--x_data', type=str, required=True)
 parser.add_argument('-y', '--y_data', type=str, required=True)
 parser.add_argument('-b', '--batch_size', type=int, default=8)
 parser.add_argument('-e', '--epochs', type=int, default=5)
-parser.add_argument('-s', '--split', type=float, default=0.9)
-parser.add_argument('--save_model', type=bool, default=True)
-parser.add_argument('--save_history', type=bool, default=True)
+parser.add_argument('-s', '--split', type=float, default=0.1)
+parser.add_argument('--out', default="./")
 args = parser.parse_args()
 
-# X_DATAPATH = '/data/s3866033/fyp/x_data.npy'
-# Y_DATAPATH = '/data/s3866033/fyp/y_data.npy'
 X_DATAPATH = args.x_data
 Y_DATAPATH = args.y_data
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 BASE_DIR = sys.path[0]
+MODEL_DIR = os.path.join(BASE_DIR, args.out)
 SPLIT = args.split
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
@@ -55,6 +50,28 @@ METRICS = [
     keras.metrics.Recall(name='recall'),
     keras.metrics.AUC(name='auc'),
 ]
+
+
+def scheduler(epoch, lr):
+    if epoch <= 20:
+        return 1e-3
+    elif 20 < epoch <= 50:
+        return 1e-4
+    else:
+        return 1e-5
+
+
+CALLBACKS = [
+    # tf.keras.callbacks.EarlyStopping(patience=3),
+    tf.keras.callbacks.ModelCheckpoint(
+        filepath=os.path.join(MODEL_DIR, 'entropy_model-{epoch:02d}_recall-{val_recall:.3f}.h5'),
+        monitor='val_recall',
+        mode='max',
+        save_best_only=True,
+        save_freq='epoch'),
+    tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs/')),
+    tf.keras.callbacks.LearningRateScheduler(scheduler)
+]
 CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
            'monitor', 'night_stand', 'sofa', 'table', 'toilet']
 
@@ -62,12 +79,11 @@ CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
 def load_data(x_data, y_data):
     x = []
     for lab in CLASSES:
-        for el in os.listdir(os.path.join(X_DATAPATH, lab, 'train')):
-            if 'binvox' in el:
-                with open(os.path.join(X_DATAPATH, lab, 'train', el), 'rb') as file:
-                    data = np.int32(binvox_rw.read_as_3d_array(file).data)
-                    padded_data = np.pad(data, 3, 'constant')
-                    x.append(padded_data)
+        for file in os.listdir(os.path.join(x_data, lab, 'train')):
+            if '.npy' in file:
+                data = np.load(os.path.join(x_data, lab, 'train', file))
+                padded_data = np.pad(data, 3, 'constant')
+                x.append(padded_data)
     x = np.array(x)
     y = np.load(y_data)
     num_objects = x.shape[0]
@@ -81,63 +97,54 @@ def load_data(x_data, y_data):
 
     if SPLIT < 0.0 or SPLIT > 1.0:
         raise argparse.ArgumentTypeError(f"split={SPLIT} not in range [0.0, 1.0]")
-    n_train = int(num_objects * SPLIT)
+    n_train = int(num_objects * (1 - SPLIT))
     x_train, y_train = x[:n_train], y[:n_train]
     x_test, y_test = x[n_train:], y[n_train:]
     return x_train, y_train, x_test, y_test
 
 
-def generate_cnn():
-    inputs = keras.Input(shape=(30, 30, 30))
-    x = layers.Reshape(target_shape=(30, 30, 30, 1))(inputs)
+def generate_cnn(hp):
+    inputs = keras.Input(shape=(31, 31, 31))
+    x = layers.Reshape(target_shape=(31, 31, 31, 1))(inputs)
 
-    x = layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same')(x)
+    cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=64, step=8)
+    x = layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
-    x = layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same')(x)
+    cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=64, step=8)
+    x = layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     x = layers.Flatten()(x)
+    cnn1_filters = hp.Int('dense_units', min_value=128, max_value=1280, step=10)
     x = layers.Dense(384, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(60, activation='sigmoid')(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs, name='voxel_net')
-    return model
-
-
-def compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=False):
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
-    model.build(input_shape=x_train.shape[1:])
-    print(model.summary())
-    history = model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs, validation_split=0.1)
-    results = model.evaluate(x_test, y_test)
-    if save_model:
-        utility.make_dir('./models')
-        model.save(f'./models/{TIMESTAMP}.h5')
-        print(f'[INFO] Model saved to models/{TIMESTAMP}.h5')
-    return history, results
+    model.summary()
+    return model
 
 
 def main():
     x_train, y_train, x_test, y_test = load_data(x_data=X_DATAPATH, y_data=Y_DATAPATH)
-    model = generate_cnn()
-    history, results = compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=args.save_model)
-    if args.save_history:
-        utility.make_dir('./history')
-        hist_df = pd.DataFrame(history.history)
-        hist_df.to_csv(
-            os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv"))
-        print(
-            f"[INFO] History saved to history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv")
+    tuner = Hyperband(generate_cnn,
+                      objective=kt.Objective("val_recall", direction="max"),
+                      max_epochs=20,
+                      factor=3,
+                      directory='./',  # Only admits relative path, for some reason.
+                      project_name='hyperband_optimization2')
+    tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
 
-
+    model = tuner.hypermodel.build(best_hps)
+    history = model.fit(x=x_train, y=y_train, epochs=args.epochs, batch_size=args.batch_size)
+    results = model.evaluate(x_test, y_test)
 
 
 if __name__ == '__main__':
