@@ -20,13 +20,13 @@ for cur in os.listdir(DATA_PATH):
         labels.append(cur)
 labels.sort()
 
-if os.path.exists(VOX_DIR):
-    print(f"[ERROR] Remove {VOX_DIR} before running.")
-    sys.exit()
-else:
-    for lab in labels:
-        os.makedirs(os.path.join(VOX_DIR, lab, 'train'))
-        os.makedirs(os.path.join(VOX_DIR, lab, 'test'))
+# if os.path.exists(VOX_DIR):
+#     print(f"[ERROR] Remove {VOX_DIR} before running.")
+#     sys.exit()
+# else:
+#     for lab in labels:
+#         os.makedirs(os.path.join(VOX_DIR, lab, 'train'))
+#         os.makedirs(os.path.join(VOX_DIR, lab, 'test'))
 
 for label in labels:
     files_train = os.listdir(os.path.join(DATA_PATH, label, "train"))
