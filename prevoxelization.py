@@ -38,7 +38,7 @@ for label in labels:
             files_train.remove(file)
     for file in files_test:
         if not file.endswith('off'):
-            files_train.remove(file)
+            files_test.remove(file)
 
     for file in files_train:
         filename = os.path.join(DATA_PATH, label, "train", file)
