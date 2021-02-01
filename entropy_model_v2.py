@@ -79,6 +79,7 @@ CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
 def load_data(x_data, y_data):
     x = []
     for lab in CLASSES:
+        print(f"[DEBUG] Loading {lab}")
         for file in os.listdir(os.path.join(x_data, lab, 'train')):
             if '.npy' in file:
                 data = np.load(os.path.join(x_data, lab, 'train', file))
