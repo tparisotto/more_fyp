@@ -110,19 +110,21 @@ def generate_cnn(hp):
 
     cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=64, step=8)
     x = layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', padding='same')(x)
+    x = layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=64, step=8)
     x = layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', padding='same')(x)
+    x = layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     x = layers.Flatten()(x)
-    cnn1_filters = hp.Int('dense_units', min_value=128, max_value=1280, step=10)
-    x = layers.Dense(384, activation='relu')(x)
+    dense_units = hp.Int('dense_units', min_value=128, max_value=1280, step=128)
+    x = layers.Dense(dense_units, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(60, activation='sigmoid')(x)
 
