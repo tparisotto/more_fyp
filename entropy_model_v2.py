@@ -111,20 +111,20 @@ def generate_cnn(hp):
     cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', padding='same')(x)
-    # x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', padding='same')(x)
-    # x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     cnn3_filters = hp.Int('cnn3_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(cnn3_filters, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(cnn3_filters, (3, 3, 3), activation='relu', padding='same')(x)
     # x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
-    # x = layers.BatchNormalization()(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     x = layers.Flatten()(x)
