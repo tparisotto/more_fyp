@@ -31,6 +31,7 @@ parser.add_argument('-y', '--y_data', type=str, required=True)
 parser.add_argument('-b', '--batch_size', type=int, default=8)
 parser.add_argument('-e', '--epochs', type=int, default=5)
 parser.add_argument('-s', '--split', type=float, default=0.1)
+parser.add_argument('--load_model')
 parser.add_argument('--out', default="./")
 args = parser.parse_args()
 
@@ -65,8 +66,8 @@ CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=3),
     tf.keras.callbacks.ModelCheckpoint(
         filepath=os.path.join(MODEL_DIR, 'voxnet-{epoch:02d}_val_recall-{val_recall:.3f}.h5'),
-        monitor='val_recall',
-        mode='max',
+        monitor='val_loss',
+        mode='min',
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs/')),
@@ -155,7 +156,14 @@ def main():
 
     # model = tuner.hypermodel.build(best_hps)
     model = generate_cnn()
-    history = model.fit(x=x_train, y=y_train, epochs=args.epochs, batch_size=args.batch_size, validation_data=(x_test, y_test))
+    if args.load_model is not None:
+        model.load_weights(args.load_model)
+        print(f"[INFO] Model {args.load_model} correctly loaded.")
+    history = model.fit(x=x_train,
+                        y=y_train,
+                        epochs=args.epochs,
+                        batch_size=args.batch_size,
+                        validation_data=(x_test, y_test))
 
 
 if __name__ == '__main__':
