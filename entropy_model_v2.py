@@ -37,8 +37,7 @@ args = parser.parse_args()
 X_DATAPATH = args.x_data
 Y_DATAPATH = args.y_data
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
-BASE_DIR = sys.path[0]
-MODEL_DIR = os.path.join(BASE_DIR, args.out)
+MODEL_DIR = os.path.join(args.out, f"voxnet_{TIMESTAMP}")
 SPLIT = args.split
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
@@ -50,6 +49,7 @@ METRICS = [
     keras.metrics.Recall(name='recall'),
     keras.metrics.AUC(name='auc'),
 ]
+
 
 
 def scheduler(epoch, lr):
@@ -64,7 +64,7 @@ def scheduler(epoch, lr):
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=3),
     tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(MODEL_DIR, 'entropy_model-{epoch:02d}_recall-{val_recall:.3f}.h5'),
+        filepath=os.path.join(MODEL_DIR, 'voxnet-{epoch:02d}_recall-{val_recall:.3f}.h5'),
         monitor='val_recall',
         mode='max',
         save_best_only=True,
@@ -133,6 +133,7 @@ def generate_cnn(hp):
 
 
 def main():
+    os.mkdir(MODEL_DIR)
     x_train, y_train, x_test, y_test = load_data(x_data=X_DATAPATH, y_data=Y_DATAPATH)
     tuner = Hyperband(generate_cnn,
                       objective=kt.Objective("val_recall", direction="max"),

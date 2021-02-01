@@ -49,7 +49,6 @@ np.random.shuffle(TEST_FILES)
 NUM_OBJECTS_TEST = len(TEST_FILES)
 TEST_FILTER = args.test_sample_rate
 
-print()
 os.mkdir(MODEL_DIR)
 
 METRICS = [
