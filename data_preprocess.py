@@ -7,13 +7,13 @@ import pandas as pd
 import numpy as np
 
 parser = argparse.ArgumentParser()
-# parser.add_argument("datapath")
-parser.add_argument("csvpath")
+parser.add_argument("--csvpath")
+parser.add_argument("--out")
 args = parser.parse_args()
 csv_filename = args.csvpath
-VOXEL_DATAPATH = args.datapath
-data = pd.read_csv(csv_filename, engine='python')
 NUM_VIEWS = 60
+data = pd.read_csv(csv_filename, engine='python')
+
 num_objects = int(data.shape[0] / NUM_VIEWS)
 
 # x = []
@@ -29,5 +29,5 @@ for i in trange(num_objects):
     y.append(label_vecs)
 
 # np.save('x_data.npy', x)
-np.save('y_data_v2.npy', y)
-print("[INFO] Features (x_data.npy) and Labels (y_data.npy) successfully stored in current directory.")
+np.save(os.path.join(args.out, 'y_data_v2.npy'), y)
+print(f"[INFO] Labels (y_data.npy) successfully stored in directory {os.path.join(args.out, 'y_data_v2.npy')}")
