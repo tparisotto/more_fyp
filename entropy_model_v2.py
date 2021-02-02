@@ -145,17 +145,17 @@ def generate_cnn():
 def main():
     os.mkdir(MODEL_DIR)
     x_train, y_train, x_test, y_test = load_data(x_data=X_DATAPATH, y_data=Y_DATAPATH)
-    # tuner = Hyperband(generate_cnn,
-    #                   objective=kt.Objective("val_recall", direction="max"),
-    #                   max_epochs=20,
-    #                   factor=3,
-    #                   directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
-    #                   project_name='hyperband_optimization2')
-    # tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
-    # best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    tuner = Hyperband(generate_cnn,
+                      objective=kt.Objective("val_recall", direction="max"),
+                      max_epochs=20,
+                      factor=3,
+                      directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
+                      project_name='hyperband_optimization2')
+    tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
 
-    # model = tuner.hypermodel.build(best_hps)
-    model = generate_cnn()
+    model = tuner.hypermodel.build(best_hps)
+    # model = generate_cnn()
     if args.load_model is not None:
         model.load_weights(args.load_model)
         print(f"[INFO] Model {args.load_model} correctly loaded.")
