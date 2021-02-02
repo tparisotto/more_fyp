@@ -105,25 +105,25 @@ def load_data(x_data, y_data):
     return x_train, y_train, x_test, y_test
 
 
-def generate_cnn():
+def generate_cnn(hp):
     inputs = keras.Input(shape=(31, 31, 31))
     x = layers.Reshape(target_shape=(31, 31, 31, 1))(inputs)
 
-    # cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
+    cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
-    # cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=32, step=4)
+    cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(12, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(12, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
-    # cnn3_filters = hp.Int('cnn3_filters', min_value=8, max_value=32, step=4)
+    cnn3_filters = hp.Int('cnn3_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(8, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(8, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
@@ -131,7 +131,7 @@ def generate_cnn():
     x = layers.Dropout(0.25)(x)
 
     x = layers.Flatten()(x)
-    # dense_units = hp.Int('dense_units', min_value=128, max_value=1280, step=128)
+    dense_units = hp.Int('dense_units', min_value=128, max_value=1280, step=128)
     x = layers.Dense(768, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(60, activation='sigmoid')(x)
