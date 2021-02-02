@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 
 BASE_DIR = sys.path[0]
 DATA_PATH = '../data/modelnet10'
-IMAGE_WIDTH = 640
-IMAGE_HEIGHT = 480
+IMAGE_WIDTH = 224
+IMAGE_HEIGHT = 224
 N_VIEWS_W = 12
 N_VIEWS_H = 5
 VIEW_INDEX = 0
