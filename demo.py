@@ -81,18 +81,21 @@ def main():
 
     n_views = len(views)
 
-    # entropy_model = keras.models.load_model(args.entropy_model)
-    # mask = to_voxel_mask(mesh)
-    # pov_pred = entropy_model.predict(mask)
-    # pov_pred = parse_povs(pov_pred)
+    entropy_model = keras.models.load_model(args.entropy_model)
+    mask = to_voxel_mask(mesh)
+    pov_pred = entropy_model.predict(mask)
+    pov_pred = parse_povs(pov_pred)
 
     fig, axes = plt.subplots(int(np.ceil(n_views/6)), 6, figsize=(9, 6), subplot_kw={'xticks': [], 'yticks': []})
-    for ax, im in zip(axes.flat, views):
+    for i, (ax, im) in enumerate(zip(axes.flat, views)):
         ax.imshow(np.asarray(im), cmap='gray')
-        circle = plt.Circle((112,112), radius=170, color='r', fill=False, clip_on=False)
-        ax.add_patch(circle)
+        if i in pov_pred:
+            circle = plt.Circle((112,112), radius=170, color='r', fill=False, clip_on=False)
+            ax.add_patch(circle)
     plt.tight_layout()
     plt.show()
+
+    data = np.asarray(views[pov_pred])
 
 
 if __name__ == "__main__":
