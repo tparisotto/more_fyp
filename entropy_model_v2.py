@@ -105,34 +105,34 @@ def load_data(x_data, y_data):
     return x_train, y_train, x_test, y_test
 
 
-def generate_cnn(hp):
+def generate_cnn():
     inputs = keras.Input(shape=(31, 31, 31))
     x = layers.Reshape(target_shape=(31, 31, 31, 1))(inputs)
 
-    cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
-    x = layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(cnn1_filters, (3, 3, 3), activation='relu', padding='same')(x)
+    # cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
+    x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
+    x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
-    cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=32, step=4)
-    x = layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(cnn2_filters, (3, 3, 3), activation='relu', padding='same')(x)
+    # cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=32, step=4)
+    x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
+    x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
-    cnn3_filters = hp.Int('cnn3_filters', min_value=8, max_value=32, step=4)
-    x = layers.Conv3D(cnn3_filters, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(cnn3_filters, (3, 3, 3), activation='relu', padding='same')(x)
+    # cnn3_filters = hp.Int('cnn3_filters', min_value=8, max_value=32, step=4)
+    x = layers.Conv3D(24, (3, 3, 3), activation='relu', padding='same')(x)
+    x = layers.Conv3D(24, (3, 3, 3), activation='relu', padding='same')(x)
     # x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     x = layers.Flatten()(x)
-    dense_units = hp.Int('dense_units', min_value=128, max_value=1280, step=128)
-    x = layers.Dense(dense_units, activation='relu')(x)
+    # dense_units = hp.Int('dense_units', min_value=128, max_value=1280, step=128)
+    x = layers.Dense(1280, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(60, activation='sigmoid')(x)
 
@@ -145,17 +145,18 @@ def generate_cnn(hp):
 def main():
     os.mkdir(MODEL_DIR)
     x_train, y_train, x_test, y_test = load_data(x_data=X_DATAPATH, y_data=Y_DATAPATH)
-    tuner = Hyperband(generate_cnn,
-                      objective=kt.Objective("val_recall", direction="max"),
-                      max_epochs=20,
-                      factor=3,
-                      directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
-                      project_name=f'hyperband_optimization{TIMESTAMP}')
-    tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
-    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    # tuner = Hyperband(generate_cnn,
+    #                   objective=kt.Objective("val_recall", direction="max"),
+    #                   max_epochs=20,
+    #                   factor=3,
+    #                   directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
+    #                   project_name=f'hyperband_optimization{TIMESTAMP}')
+    # tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+    # best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    #
+    # model = tuner.hypermodel.build(best_hps)
 
-    model = tuner.hypermodel.build(best_hps)
-    # model = generate_cnn()
+    model = generate_cnn()
     if args.load_model is not None:
         model.load_weights(args.load_model)
         print(f"[INFO] Model {args.load_model} correctly loaded.")
@@ -163,7 +164,8 @@ def main():
                         y=y_train,
                         epochs=args.epochs,
                         batch_size=args.batch_size,
-                        validation_data=(x_test, y_test))
+                        validation_data=(x_test, y_test),
+                        callbacks=CALLBACKS)
 
 
 if __name__ == '__main__':
