@@ -113,7 +113,7 @@ def generate_cnn():
     # cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
+    # x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
