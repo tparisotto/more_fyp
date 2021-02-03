@@ -30,4 +30,4 @@ for i in trange(num_objects):
 
 # np.save('x_data.npy', x)
 np.save(os.path.join(args.out, 'y_data_v2.npy'), y)
-print(f"[INFO] Labels (y_data.npy) successfully stored in directory {os.path.join(args.out, 'y_data_v2.npy')}")
+print(f"[INFO] Labels (y_data_v2.npy) successfully stored in directory {os.path.join(args.out, 'y_data_v2.npy')}")

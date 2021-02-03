@@ -40,6 +40,7 @@ Y_DATAPATH = args.y_data
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 MODEL_DIR = os.path.join(args.out, f"voxnet_{TIMESTAMP}")
 SPLIT = args.split
+INPUT_SHAPE = (0,0,0)
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
     keras.metrics.FalsePositives(name='fp'),
@@ -89,7 +90,7 @@ def load_data(x_data, y_data):
     x = np.array(x)
     y = np.load(y_data)
     num_objects = x.shape[0]
-    input_shape = x.shape[1:]
+    INPUT_SHAPE = x.shape[1:]
 
     xy = list(zip(x, y))
     np.random.shuffle(xy)
@@ -106,8 +107,8 @@ def load_data(x_data, y_data):
 
 
 def generate_cnn():
-    inputs = keras.Input(shape=(31, 31, 31))
-    x = layers.Reshape(target_shape=(31, 31, 31, 1))(inputs)
+    inputs = keras.Input(shape=INPUT_SHAPE)
+    x = layers.Reshape(target_shape=(INPUT_SHAPE[0], INPUT_SHAPE[1], INPUT_SHAPE[2], 1))(inputs)
 
     # cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
