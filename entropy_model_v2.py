@@ -40,7 +40,6 @@ Y_DATAPATH = args.y_data
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 MODEL_DIR = os.path.join(args.out, f"voxnet_{TIMESTAMP}")
 SPLIT = args.split
-INPUT_SHAPE = (0, 0, 0)
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
     keras.metrics.FalsePositives(name='fp'),
@@ -91,12 +90,11 @@ def load_data(x_data, y_data):
         for file in os.listdir(os.path.join(x_data, lab, 'train')):
             if '.npy' in file:
                 data = np.load(os.path.join(x_data, lab, 'train', file))
-                padded_data = np.pad(data, 2, 'constant')
+                padded_data = np.pad(data, 3, 'constant')
                 x.append(padded_data)
     x = np.array(x)
     y = np.load(y_data)
     num_objects = x.shape[0]
-    INPUT_SHAPE = x.shape[1:]
 
     xy = list(zip(x, y))
     np.random.shuffle(xy)
@@ -113,27 +111,27 @@ def load_data(x_data, y_data):
 
 
 def generate_cnn():
-    inputs = keras.Input(shape=INPUT_SHAPE)
-    x = layers.Reshape(target_shape=(INPUT_SHAPE[0], INPUT_SHAPE[1], INPUT_SHAPE[2], 1))(inputs)
+    inputs = keras.Input(shape=(56, 56, 56))
+    x = layers.Reshape(target_shape=(56, 56, 56, 1))(inputs)
 
     # cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
-    # x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
+    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     # cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
-    # x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
+    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
     # cnn3_filters = hp.Int('cnn3_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(24, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(24, (3, 3, 3), activation='relu', padding='same')(x)
-    # x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
+    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
