@@ -96,6 +96,7 @@ def load_data(x_data, y_data):
     x = np.array(x)
     y = np.load(y_data)
     num_objects = x.shape[0]
+    print(x.shape)
     INPUT_SHAPE = x.shape[1:]
 
     xy = list(zip(x, y))
