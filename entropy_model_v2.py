@@ -85,7 +85,7 @@ def load_data(x_data, y_data):
         for file in os.listdir(os.path.join(x_data, lab, 'train')):
             if '.npy' in file:
                 data = np.load(os.path.join(x_data, lab, 'train', file))
-                padded_data = np.pad(data, 3, 'constant')
+                padded_data = np.pad(data, 2, 'constant')
                 x.append(padded_data)
     x = np.array(x)
     y = np.load(y_data)
@@ -120,7 +120,7 @@ def generate_cnn():
     # cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=32, step=4)
     x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
     x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
+    # x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
     # x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.25)(x)
 
