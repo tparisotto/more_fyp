@@ -40,7 +40,7 @@ Y_DATAPATH = args.y_data
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 MODEL_DIR = os.path.join(args.out, f"voxnet_{TIMESTAMP}")
 SPLIT = args.split
-INPUT_SHAPE = (0, 0, 0)
+INPUT_SHAPE = (14, 14, 14)
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
     keras.metrics.FalsePositives(name='fp'),
@@ -97,7 +97,6 @@ def load_data(x_data, y_data):
     y = np.load(y_data)
     num_objects = x.shape[0]
     print(x.shape)
-    INPUT_SHAPE = x.shape[1:]
 
     xy = list(zip(x, y))
     np.random.shuffle(xy)
