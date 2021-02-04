@@ -123,11 +123,11 @@ def generate_cnn(hp):
     cnn_b_filters = hp.Int('cnn2_filters', min_value=4, max_value=16, step=4)
     b = layers.Conv3D(cnn_b_filters, (3, 3, 3), activation='relu', padding='same')(base)
     b = layers.AveragePooling3D(pool_size=(2, 2, 2))(b)
-    a = layers.BatchNormalization()(b)
+    b = layers.BatchNormalization()(b)
     b = layers.Dropout(0.25)(b)
     b = layers.Flatten()(b)
 
-    x = layers.Concatenate(axis=0)([a, b])
+    x = layers.Concatenate(axis=1)([a, b])
     dense_units = hp.Int('dense_units', min_value=256, max_value=512, step=64)
     x = layers.Dense(dense_units, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
