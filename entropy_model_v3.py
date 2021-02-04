@@ -82,8 +82,9 @@ def load_data(x_data, csv):
                 data = np.load(os.path.join(x_data, lab, 'train', file))
                 padded_data = np.pad(data, 3, 'constant')
                 x.append(padded_data)
-                filename = os.path.split(file)[-1].split(".")[0]
-                label, index = filename.split("_")
+                filename = file.split(".")[0]
+                index = filename.split("_")[-1]
+                label = filename.split("_")[-2]
                 subcsv = csv[csv['label'] == label]
                 entropies = np.array(subcsv[subcsv['object_index'] == int(index)].entropy)
                 y.append(entropies)
