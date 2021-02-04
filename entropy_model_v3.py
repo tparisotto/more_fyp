@@ -12,6 +12,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import kerastuner as kt
 from kerastuner.tuners import Hyperband
+from tqdm import tqdm
 
 print(f"Tensorflow v{tf.__version__}\n")
 
@@ -28,16 +29,17 @@ args = parser.parse_args()
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 MODEL_DIR = os.path.join(args.out, f"voxnetv3_{TIMESTAMP}")
 SPLIT = args.split
-# METRICS = [
-#     keras.metrics.TruePositives(name='tp'),
-#     keras.metrics.FalsePositives(name='fp'),
-#     keras.metrics.TrueNegatives(name='tn'),
-#     keras.metrics.FalseNegatives(name='fn'),
-#     keras.metrics.BinaryAccuracy(name='accuracy'),
-#     keras.metrics.Precision(name='precision'),
-#     keras.metrics.Recall(name='recall'),
-#     keras.metrics.AUC(name='auc'),
-# ]
+METRICS = [
+    # keras.metrics.TruePositives(name='tp'),
+    # keras.metrics.FalsePositives(name='fp'),
+    # keras.metrics.TrueNegatives(name='tn'),
+    # keras.metrics.FalseNegatives(name='fn'),
+    # keras.metrics.BinaryAccuracy(name='accuracy'),
+    # keras.metrics.Precision(name='precision'),
+    # keras.metrics.Recall(name='recall'),
+    keras.metrics.AUC(name='auc'),
+    keras.metrics.MeanSquaredError(name='mse')
+]
 
 
 def scheduler(epoch, lr):
@@ -77,7 +79,7 @@ def load_data(x_data, csv):
     csv = pd.read_csv(csv)
     for lab in CLASSES:
         print(f"[DEBUG] Loading {lab}")
-        for file in os.listdir(os.path.join(x_data, lab, 'train')):
+        for file in tqdm(os.listdir(os.path.join(x_data, lab, 'train'))):
             if '.npy' in file:
                 data = np.load(os.path.join(x_data, lab, 'train', file))
                 padded_data = np.pad(data, 3, 'constant')
@@ -123,14 +125,14 @@ def generate_cnn(hp):
     b = layers.Dropout(0.25)(b)
     b = layers.Flatten()(b)
 
-    x = layers.Concatenate(axis=0)([a, b])
-    dense_units = hp.Int('dense_units', min_value=60, max_value=1200, step=60)
+    x = layers.Concatenate(axis=1)([a, b])
+    dense_units = hp.Int('dense_units', min_value=64, max_value=512, step=64)
     x = layers.Dense(dense_units, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(60, activation='linear')(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs, name='voxel_net')
-    model.compile(optimizer='adam', loss='mae', metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='mse', metrics=['mse'])
     model.summary()
     return model
 
