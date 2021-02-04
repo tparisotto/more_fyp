@@ -71,7 +71,6 @@ CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
            'monitor', 'night_stand', 'sofa', 'table', 'toilet']
 
 
-
 def load_data(x_data, csv):
     x = []
     y = []
@@ -85,45 +84,48 @@ def load_data(x_data, csv):
                 x.append(padded_data)
                 filename = file.split(".")[0]
                 index = int(filename.split("_")[-1])
-                print(f"[DEBUG] label, index : {lab}, {index}")
+                # print(f"[DEBUG] label, index : {lab}, {index}")
                 subcsv = csv[csv['label'] == lab]
                 entropies = np.array(subcsv[subcsv['object_index'] == index].entropy)
-                print(f"[DEBUG] Entropies of {file} : {entropies}")
+                # print(f"[DEBUG] Entropies of {file} : {entropies}")
                 y.append(entropies)
     x = np.array(x)
     y = np.array(y)
+    num_objects = x.shape[0]
 
-    return x, y
+    xy = list(zip(x, y))
+    np.random.shuffle(xy)
+    x, y = zip(*xy)
+    x = np.array(x)
+    y = np.array(y)
+
+    if SPLIT < 0.0 or SPLIT > 1.0:
+        raise argparse.ArgumentTypeError(f"split={SPLIT} not in range [0.0, 1.0]")
+    n_train = int(num_objects * (1 - SPLIT))
+    x_train, y_train = x[:n_train], y[:n_train]
+    x_test, y_test = x[n_train:], y[n_train:]
+    return x_train, y_train, x_test, y_test
 
 
-def generate_cnn():
-    inputs = keras.Input(shape=(31, 31, 31))
-    x = layers.Reshape(target_shape=(31, 31, 31, 1))(inputs)
+def generate_cnn(hp):
+    inputs = keras.Input(shape=(56, 56, 56))
+    base = layers.Reshape(target_shape=(56, 56, 56, 1))(inputs)
 
-    # cnn1_filters = hp.Int('cnn1_filters', min_value=8, max_value=32, step=4)
-    x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(28, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
-    # x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.25)(x)
+    cnn_a_filters = hp.Int('cnn1_filters', min_value=4, max_value=32, step=4)
+    a = layers.Conv3D(cnn_a_filters, (5, 5, 5), activation='relu', padding='same')(base)
+    a = layers.AveragePooling3D(pool_size=(2, 2, 2))(a)
+    a = layers.Dropout(0.25)(a)
+    a = layers.Flatten()(a)
 
-    # cnn2_filters = hp.Int('cnn2_filters', min_value=8, max_value=32, step=4)
-    x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(20, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
-    # x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.25)(x)
+    cnn_b_filters = hp.Int('cnn2_filters', min_value=4, max_value=32, step=4)
+    b = layers.Conv3D(cnn_b_filters, (3, 3, 3), activation='relu', padding='same')(base)
+    b = layers.AveragePooling3D(pool_size=(2, 2, 2))(b)
+    b = layers.Dropout(0.25)(b)
+    b = layers.Flatten()(b)
 
-    # cnn3_filters = hp.Int('cnn3_filters', min_value=8, max_value=32, step=4)
-    x = layers.Conv3D(24, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(24, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
-    # x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.25)(x)
-
-    x = layers.Flatten()(x)
-    # dense_units = hp.Int('dense_units', min_value=128, max_value=1280, step=128)
-    x = layers.Dense(1280, activation='relu')(x)
+    x = layers.Concatenate(axis=0)([a, b])
+    dense_units = hp.Int('dense_units', min_value=60, max_value=1200, step=60)
+    x = layers.Dense(dense_units, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(60, activation='linear')(x)
 
@@ -135,18 +137,24 @@ def generate_cnn():
 
 def main():
     os.mkdir(MODEL_DIR)
-    x, y = load_data(args.x_data, args.csv)
-    print(f"[DEBUG] x.shape : {x.shape}")
-    print(f"[DEBUG] y.shape : {y.shape}")
-    print(f"[DEBUG] y sample : {y[12]}")
-    model = generate_cnn()
-    if args.load_model is not None:
-        model.load_weights(args.load_model)
-        print(f"[INFO] Model {args.load_model} correctly loaded.")
-    history = model.fit(x, y,
+    x_train, y_train, x_test, y_test = load_data(args.x_data, args.csv)
+    tuner = Hyperband(generate_cnn,
+                      objective=kt.Objective("val_recall", direction="max"),
+                      max_epochs=20,
+                      factor=3,
+                      directory='./',  # '../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
+                      project_name=f'hyperband_optimization{TIMESTAMP}')
+    tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+
+    model = tuner.hypermodel.build(best_hps)
+    # if args.load_model is not None:
+    #     model.load_weights(args.load_model)
+    #     print(f"[INFO] Model {args.load_model} correctly loaded.")
+    history = model.fit(x_train, y_train,
                         epochs=args.epochs,
                         batch_size=args.batch_size,
-                        validation_split=args.split,
+                        validation_data=(x_test, y_test),
                         callbacks=CALLBACKS,
                         shuffle=True)
 
