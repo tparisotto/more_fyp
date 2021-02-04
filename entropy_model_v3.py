@@ -65,7 +65,7 @@ CALLBACKS = [
                                          factor=0.9,
                                          patience=10,
                                          verbose=1,
-                                         mode='max',
+                                         mode='min',
                                          min_lr=1e-5),
     # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
