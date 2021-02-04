@@ -144,7 +144,7 @@ def main():
     x_train, y_train, x_test, y_test = load_data(args.x_data, args.csv)
     tuner = Hyperband(generate_cnn,
                       objective=kt.Objective("val_loss", direction="min"),
-                      max_epochs=30,
+                      max_epochs=20,
                       factor=3,
                       directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
                       project_name=f'hyperband_optimization{TIMESTAMP}')
