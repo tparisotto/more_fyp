@@ -86,11 +86,13 @@ def load_data(x_data, csv):
                 filename = file.split(".")[0]
                 index = int(filename.split("_")[-1])
                 label = filename.split("_")[-2]
+                print(f"[DEBUG] label, index : {label}, {index}")
                 subcsv = csv[csv['label'] == label]
                 entropies = np.array(subcsv[subcsv['object_index'] == index].entropy)
-                # print(f"[DEBUG] Entropies of {file} : {entropies}")
+                print(f"[DEBUG] Entropies of {file} : {entropies}")
                 y.append(entropies)
     x = np.array(x)
+    print(f"[DEBUG] y shape before : {np.shape(y)}")
     y = np.array(y)
 
     return x, y
