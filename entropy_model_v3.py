@@ -78,7 +78,7 @@ def load_data(x_data, csv):
     y = []
     csv = pd.read_csv(csv)
     for lab in CLASSES:
-        print(f"[DEBUG] Loading {lab}")
+        print(f"[DEBUG] Loading {lab}\n")
         for file in tqdm(os.listdir(os.path.join(x_data, lab, 'train'))):
             if '.npy' in file:
                 data = np.load(os.path.join(x_data, lab, 'train', file))
@@ -113,26 +113,28 @@ def generate_cnn(hp):
     inputs = keras.Input(shape=(56, 56, 56))
     base = layers.Reshape(target_shape=(56, 56, 56, 1))(inputs)
 
-    cnn_a_filters = hp.Int('cnn1_filters', min_value=4, max_value=32, step=4)
+    cnn_a_filters = hp.Int('cnn1_filters', min_value=4, max_value=16, step=4)
     a = layers.Conv3D(cnn_a_filters, (5, 5, 5), activation='relu', padding='same')(base)
     a = layers.AveragePooling3D(pool_size=(2, 2, 2))(a)
+    a = layers.BatchNormalization()(a)
     a = layers.Dropout(0.25)(a)
     a = layers.Flatten()(a)
 
-    cnn_b_filters = hp.Int('cnn2_filters', min_value=4, max_value=32, step=4)
+    cnn_b_filters = hp.Int('cnn2_filters', min_value=4, max_value=16, step=4)
     b = layers.Conv3D(cnn_b_filters, (3, 3, 3), activation='relu', padding='same')(base)
     b = layers.AveragePooling3D(pool_size=(2, 2, 2))(b)
+    a = layers.BatchNormalization()(b)
     b = layers.Dropout(0.25)(b)
     b = layers.Flatten()(b)
 
     x = layers.Concatenate(axis=1)([a, b])
-    dense_units = hp.Int('dense_units', min_value=64, max_value=512, step=64)
+    dense_units = hp.Int('dense_units', min_value=256, max_value=512, step=64)
     x = layers.Dense(dense_units, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(60, activation='linear')(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs, name='voxel_net')
-    model.compile(optimizer='adam', loss='mse', metrics=['mse'])
+    model.compile(optimizer='adam', loss='mae', metrics=['mse'])
     model.summary()
     return model
 
