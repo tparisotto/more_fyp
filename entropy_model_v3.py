@@ -127,7 +127,7 @@ def generate_cnn(hp):
     b = layers.Dropout(0.25)(b)
     b = layers.Flatten()(b)
 
-    x = layers.Concatenate(axis=1)([a, b])
+    x = layers.Concatenate(axis=0)([a, b])
     dense_units = hp.Int('dense_units', min_value=256, max_value=512, step=64)
     x = layers.Dense(dense_units, activation='relu')(x)
     x = layers.Dropout(0.5)(x)
