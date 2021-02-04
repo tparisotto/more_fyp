@@ -26,7 +26,7 @@ parser.add_argument('--out', default="./")
 args = parser.parse_args()
 
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
-MODEL_DIR = os.path.join(args.out, f"voxnet_{TIMESTAMP}")
+MODEL_DIR = os.path.join(args.out, f"voxnetv3_{TIMESTAMP}")
 SPLIT = args.split
 METRICS = [
     keras.metrics.TruePositives(name='tp'),
@@ -145,7 +145,7 @@ def main():
     history = model.fit(x, y,
                         epochs=args.epochs,
                         batch_size=args.batch_size,
-                        validation_split=0.1,
+                        validation_split=args.split,
                         callbacks=CALLBACKS,
                         shuffle=True)
 
