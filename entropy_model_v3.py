@@ -28,16 +28,16 @@ args = parser.parse_args()
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 MODEL_DIR = os.path.join(args.out, f"voxnetv3_{TIMESTAMP}")
 SPLIT = args.split
-METRICS = [
-    keras.metrics.TruePositives(name='tp'),
-    keras.metrics.FalsePositives(name='fp'),
-    keras.metrics.TrueNegatives(name='tn'),
-    keras.metrics.FalseNegatives(name='fn'),
-    keras.metrics.BinaryAccuracy(name='accuracy'),
-    keras.metrics.Precision(name='precision'),
-    keras.metrics.Recall(name='recall'),
-    keras.metrics.AUC(name='auc'),
-]
+# METRICS = [
+#     keras.metrics.TruePositives(name='tp'),
+#     keras.metrics.FalsePositives(name='fp'),
+#     keras.metrics.TrueNegatives(name='tn'),
+#     keras.metrics.FalseNegatives(name='fn'),
+#     keras.metrics.BinaryAccuracy(name='accuracy'),
+#     keras.metrics.Precision(name='precision'),
+#     keras.metrics.Recall(name='recall'),
+#     keras.metrics.AUC(name='auc'),
+# ]
 
 
 def scheduler(epoch, lr):
@@ -139,8 +139,8 @@ def main():
     os.mkdir(MODEL_DIR)
     x_train, y_train, x_test, y_test = load_data(args.x_data, args.csv)
     tuner = Hyperband(generate_cnn,
-                      objective=kt.Objective("val_recall", direction="max"),
-                      max_epochs=20,
+                      objective=kt.Objective("val_loss", direction="min"),
+                      max_epochs=30,
                       factor=3,
                       directory='./',  # '../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
                       project_name=f'hyperband_optimization{TIMESTAMP}')
