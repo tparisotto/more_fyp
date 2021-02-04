@@ -144,7 +144,7 @@ def main():
                       objective=kt.Objective("val_loss", direction="min"),
                       max_epochs=30,
                       factor=3,
-                      directory='./',  # '../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
+                      directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
                       project_name=f'hyperband_optimization{TIMESTAMP}')
     tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
