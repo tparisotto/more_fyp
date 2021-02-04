@@ -67,10 +67,9 @@ CALLBACKS = [
                                          min_lr=1e-5),
     # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
-# CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
-#            'monitor', 'night_stand', 'sofa', 'table', 'toilet']
+CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
+           'monitor', 'night_stand', 'sofa', 'table', 'toilet']
 
-CLASSES = ['bathtub']
 
 
 def load_data(x_data, csv):
@@ -89,7 +88,7 @@ def load_data(x_data, csv):
                 label = filename.split("_")[-2]
                 subcsv = csv[csv['label'] == label]
                 entropies = np.array(subcsv[subcsv['object_index'] == index].entropy)
-                print(f"[DEBUG] Entropies of {file} : {entropies}")
+                # print(f"[DEBUG] Entropies of {file} : {entropies}")
                 y.append(entropies)
     x = np.array(x)
     y = np.array(y)
