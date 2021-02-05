@@ -62,11 +62,11 @@ CALLBACKS = [
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs/')),
     tf.keras.callbacks.CSVLogger(os.path.join(MODEL_DIR, 'logs/training_log.csv')),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
-                                         factor=0.9,
+                                         factor=0.3,
                                          patience=10,
                                          verbose=1,
                                          mode='min',
-                                         min_lr=1e-5),
+                                         min_lr=1e-6),
     # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
