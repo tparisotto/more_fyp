@@ -109,27 +109,28 @@ def load_data(x_data, csv):
     return x_train, y_train, x_test, y_test
 
 
-def generate_cnn(hp):
+def generate_cnn():
     inputs = keras.Input(shape=(56, 56, 56))
     base = layers.Reshape(target_shape=(56, 56, 56, 1))(inputs)
 
-    cnn_a_filters = hp.Int('cnn1_filters', min_value=4, max_value=16, step=4)
-    a = layers.Conv3D(cnn_a_filters, (5, 5, 5), activation='relu', padding='same')(base)
+    # cnn_a_filters = hp.Int('cnn1_filters', min_value=4, max_value=16, step=4)
+    a = layers.Conv3D(8, (5, 5, 5), activation='relu', padding='same')(base)
     a = layers.AveragePooling3D(pool_size=(2, 2, 2))(a)
     a = layers.BatchNormalization()(a)
     a = layers.Dropout(0.25)(a)
     a = layers.Flatten()(a)
 
-    cnn_b_filters = hp.Int('cnn2_filters', min_value=4, max_value=16, step=4)
-    b = layers.Conv3D(cnn_b_filters, (3, 3, 3), activation='relu', padding='same')(base)
+    # cnn_b_filters = hp.Int('cnn2_filters', min_value=4, max_value=16, step=4)
+    b = layers.Conv3D(8, (3, 3, 3), activation='relu', padding='same')(base)
     b = layers.AveragePooling3D(pool_size=(2, 2, 2))(b)
     b = layers.BatchNormalization()(b)
     b = layers.Dropout(0.25)(b)
     b = layers.Flatten()(b)
 
     x = layers.Concatenate(axis=1)([a, b])
-    dense_units = hp.Int('dense_units', min_value=256, max_value=512, step=64)
-    x = layers.Dense(dense_units, activation='relu')(x)
+    # dense_units = hp.Int('dense_units', min_value=256, max_value=512, step=64)
+    x = layers.Dense(512, activation='relu')(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.5)(x)
     outputs = layers.Dense(60, activation='linear')(x)
 
@@ -142,19 +143,20 @@ def generate_cnn(hp):
 def main():
     os.mkdir(MODEL_DIR)
     x_train, y_train, x_test, y_test = load_data(args.x_data, args.csv)
-    tuner = Hyperband(generate_cnn,
-                      objective=kt.Objective("val_loss", direction="min"),
-                      max_epochs=20,
-                      factor=3,
-                      directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
-                      project_name=f'hyperband_optimization{TIMESTAMP}')
-    tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
-    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
-
-    model = tuner.hypermodel.build(best_hps)
-    # if args.load_model is not None:
-    #     model.load_weights(args.load_model)
-    #     print(f"[INFO] Model {args.load_model} correctly loaded.")
+    # tuner = Hyperband(generate_cnn,
+    #                   objective=kt.Objective("val_loss", direction="min"),
+    #                   max_epochs=20,
+    #                   factor=3,
+    #                   directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
+    #                   project_name=f'hyperband_optimization{TIMESTAMP}')
+    # tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+    # best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    #
+    # model = tuner.hypermodel.build(best_hps)
+    model = generate_cnn()
+    if args.load_model is not None:
+        model.load_weights(args.load_model)
+        print(f"[INFO] Model {args.load_model} correctly loaded.")
     history = model.fit(x_train, y_train,
                         epochs=args.epochs,
                         batch_size=args.batch_size,

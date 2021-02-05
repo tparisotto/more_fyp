@@ -49,7 +49,7 @@ filename = os.path.split(data)[-1].split(".")[0]
 label, index = filename.split("_")
 subcsv = csv[csv['label'] == label]
 entropies = np.array(subcsv[subcsv['object_index'] == int(index)].entropy)
-fig, ax = plt.subplots(1, 2)
+fig, ax = plt.subplots(1, 2, sharey=True)
 x = np.arange(60)
 ax[0].bar(x, height=views)
 ax[0].set_xticks(x)
