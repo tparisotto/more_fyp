@@ -9,6 +9,7 @@ from tensorflow import keras
 import utility
 from skimage.feature import peak_local_max
 from time import time
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data')
@@ -152,10 +153,10 @@ def main():
     for lab in CLASSES:
         test_files = os.listdir(os.path.join(BASE_DIR, DATA_PATH, lab, 'test'))
         object_index, labels_true, labels_pred, offset_phi, offset_theta = [], [], [], [], []
-        for x in test_files[:2]:
+        for x in tqdm(test_files):
             if '.off' in x:
                 start = time()
-                print(f"[INFO] Current Object: {x}")
+                # print(f"[INFO] Current Object: {x}")
                 x = os.path.join(BASE_DIR, DATA_PATH, lab, 'test', x)
                 labels, pred_views, views = classify(x, entropy_model, classifier)
 
@@ -178,7 +179,7 @@ def main():
                 offset_phi.append(majority_offset[1])
                 offset_theta.append(majority_offset[0])
                 end = time()
-                print(f"[INFO] Elapsed time for object: {end-start}")
+                # print(f"[INFO] Elapsed time for object: {end-start}")
         csv = pd.DataFrame({"true_label": labels_true,
                             "object_index": object_index,
                             "pred_label": labels_pred,

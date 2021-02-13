@@ -108,7 +108,8 @@ def classify(off_file, entropy_model, classifier):
         peak_views.append((y * 12) + x)
     peak_views = sorted(peak_views)
     fig, ax = plt.subplots(1)
-    ax.imshow(entropies, cmap='rainbow')
+    image = ax.imshow(entropies, cmap='rainbow')
+    fig.colorbar(image, orientation='horizontal')
     for i in range(len(coords)):
         circle = plt.Circle((coords[i][1], coords[i][0]), radius=0.2, color='black')
         ax.add_patch(circle)
@@ -148,13 +149,13 @@ def classify(off_file, entropy_model, classifier):
             i = i + 1
             plt.subplot(np.ceil(len(rotations)/3), 3, i)
             im = cv2.imread(os.path.join(TMP_DIR, file))
+            phi = int(file.split(".")[0].split("_")[-1])
+            theta = int(file.split(".")[0].split("_")[-3])
             plt.imshow(im, cmap='gray')
-            plt.title(label=f'({np.rad2deg(-rotations[i-1][0]):.2f}, {np.rad2deg(rotations[i-1][2]):.2f})')
+            plt.title(label=f'({theta:.2f}, {phi:.2f})')
             plt.xticks([])
             plt.yticks([])
             views_images.append(cv2.imread(os.path.join(TMP_DIR, file)))
-            phi = int(file.split(".")[0].split("_")[-1])
-            theta = int(file.split(".")[0].split("_")[-3])
             views.append((theta, phi))
 
     views_images = np.array(views_images)
@@ -193,7 +194,7 @@ def main():
     vec2lab = utility.get_label_dict(inverse=True)
     for i in range(len(labels)):
         print(
-            f"[INFO] Predicted: {vec2lab[np.argmax(labels[i])]}, {idx2rot[int(np.argmax(pred_views[i]))]} - True: {views[i]}")
+            f"[INFO] Predicted: {vec2lab[np.argmax(labels[i])]}, {idx2rot[int(np.argmax(pred_views[i]))]} - From: {views[i]}")
     print(f"[INFO] Majority vote:")
     labint = []
     for el in labels:
@@ -210,6 +211,5 @@ def main():
     print(f"    offset: theta={offset[0]} phi={offset[1]}")
 
 
-# TODO: Fix true views not showing correctly
 if __name__ == '__main__':
     main()

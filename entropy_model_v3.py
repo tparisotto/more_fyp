@@ -88,7 +88,7 @@ def load_data(x_data, csv):
                 index = int(filename.split("_")[-1])
                 # print(f"[DEBUG] label, index : {lab}, {index}")
                 subcsv = csv[csv['label'] == lab]
-                entropies = np.array(subcsv[subcsv['object_index'] == index].entropy)
+                entropies = np.array(subcsv[subcsv['object_index'] == index].sort_values(by=['view_code']).entropy)
                 # print(f"[DEBUG] Entropies of {file} : {entropies}")
                 y.append(entropies)
     x = np.array(x)
