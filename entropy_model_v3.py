@@ -66,7 +66,7 @@ CALLBACKS = [
                                          patience=10,
                                          verbose=1,
                                          mode='min',
-                                         min_lr=1e-6),
+                                         min_lr=3e-7),
     # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
@@ -77,8 +77,9 @@ def load_data(x_data, csv):
     x = []
     y = []
     csv = pd.read_csv(csv)
+    print('[INFO] Loading Data...')
     for lab in CLASSES:
-        print(f"[DEBUG] Loading {lab}\n")
+        # print(f"[DEBUG] Loading {lab}\n")
         for file in tqdm(os.listdir(os.path.join(x_data, lab, 'train'))):
             if '.npy' in file:
                 data = np.load(os.path.join(x_data, lab, 'train', file))
@@ -135,7 +136,7 @@ def generate_cnn():
     outputs = layers.Dense(60, activation='linear')(x)
 
     model = keras.Model(inputs=inputs, outputs=outputs, name='voxel_net')
-    model.compile(optimizer='adam', loss='mae', metrics=['mse'])
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=5e-5), loss='mae', metrics=['mse'])
     model.summary()
     return model
 

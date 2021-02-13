@@ -37,6 +37,16 @@ def normalize3d(vector):
     np_normalized = np_arr / max_val
     return open3d.utility.Vector3dVector(np_normalized)
 
+def entropy_distribution():
+    data = pd.read_csv(args.data)
+    chairs = data[data['label'] == 'chair']
+    distrib = []
+    for i in range(int(len(chairs)/60)):
+        obj = chairs[chairs['object_index'] == i].sort_values(by=['view_code'])
+        for j in range(60):
+
+
+
 def entropy_plot(n=1600):
     data = pd.read_csv(args.data)
     df = data.iloc[60*n:60*(n+1)].sort_values(by=['view_code'])
@@ -87,7 +97,7 @@ def entropy_plot(n=1600):
     plt.show()
 
 def main():
-    entropy_plot()
+    pass
 
 if __name__ == '__main__':
     main()
