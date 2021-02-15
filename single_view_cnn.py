@@ -20,7 +20,7 @@ parser.add_argument("--epochs", type=int, default=3)
 parser.add_argument("--train_sample_rate", type=float, default=10)
 parser.add_argument("--test_sample_rate", type=float, default=10)
 parser.add_argument("-a", "--architecture", default="vgg",
-                    choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'light'])
+                    choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'vggm-rotationnet'])
 parser.add_argument("-o", "--out", default="./")
 parser.add_argument("--load_model")
 args = parser.parse_args()
