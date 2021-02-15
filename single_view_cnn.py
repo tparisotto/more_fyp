@@ -179,7 +179,7 @@ def generate_cnn(app="vgg"):
         preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
         x = net(preprocessed)
 
-    elif app == "rotationnet":
+    elif app == "vggm-rotationnet":
         x = keras.layers.Conv2D(96, kernel_size=7, strides=2, padding='valid', activation='relu')(inputs)
         x = keras.layers.Lambda(tf.nn.local_response_normalization(alpha=0.0005))(x)
         x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
