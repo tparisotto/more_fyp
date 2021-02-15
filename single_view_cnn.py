@@ -20,7 +20,7 @@ parser.add_argument("--epochs", type=int, default=3)
 parser.add_argument("--train_sample_rate", type=float, default=10)
 parser.add_argument("--test_sample_rate", type=float, default=10)
 parser.add_argument("-a", "--architecture", default="vgg",
-                    choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'vggm-rotationnet'])
+                    choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'alexnet'])
 parser.add_argument("-o", "--out", default="./")
 parser.add_argument("--load_model")
 args = parser.parse_args()
@@ -179,22 +179,23 @@ def generate_cnn(app="vgg"):
         preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
         x = net(preprocessed)
 
-    elif app == "vggm-rotationnet":
-        x = keras.layers.Conv2D(96, kernel_size=7, strides=2, padding='valid', activation='relu')(inputs)
-        x = keras.layers.Lambda(tf.nn.local_response_normalization(alpha=0.0005))(x)
+    elif app == "alexnet":
+        x = keras.layers.Conv2D(96, kernel_size=7, strides=2, padding='same', activation='relu')(inputs)
+        x = keras.layers.BatchNormalization()(x)
         x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
-        x = keras.layers.Conv2D(256, kernel_size=5, strides=2, padding='valid', activation='relu')(x)
+        x = keras.layers.Conv2D(256, kernel_size=5, strides=2, padding='same', activation='relu')(x)
+        x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Lambda(tf.nn.local_response_normalization, arguments={'alpha': 0.0005})(x)
         x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
         x = keras.layers.Conv2D(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
         x = keras.layers.Conv2D(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
         x = keras.layers.Conv2D(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
         x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
+        x = keras.layers.Flatten()(x)
         x = keras.layers.Dense(4096, activation='relu')(x)
         x = keras.layers.Dropout(0.5)(x)
         x = keras.layers.Dense(4096, activation='relu')(x)
         x = keras.layers.Dropout(0.5)(x)
-
 
     x = layers.Dense(220)(x)
     x = layers.Dropout(0.5)(x)
