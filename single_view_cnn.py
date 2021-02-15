@@ -1,4 +1,5 @@
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import argparse
 import pandas as pd
@@ -52,7 +53,8 @@ TEST_FILTER = args.test_sample_rate
 os.mkdir(MODEL_DIR)
 
 METRICS = [
-    keras.metrics.BinaryAccuracy(name='accuracy'),
+    keras.metrics.CategoricalAccuracy(name='accuracy'),
+    keras.metrics.BinaryAccuracy(name='binary_accuracy'),
     keras.metrics.Precision(name='precision'),
     keras.metrics.Recall(name='recall'),
     keras.metrics.AUC(name='auc')
@@ -76,15 +78,14 @@ CALLBACKS = [
         mode='min',
         save_best_only=True,
         save_freq='epoch'),
-    # tf.keras.callbacks.LearningRateScheduler(scheduler),
-    tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs/')),
-    tf.keras.callbacks.CSVLogger(os.path.join(MODEL_DIR, 'logs/training_log.csv')),
+    tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs')),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
                                          factor=0.3,
-                                         patience=5,
+                                         patience=3,
                                          verbose=1,
                                          mode='min',
                                          min_lr=1e-7),
+    # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 
 
@@ -199,7 +200,7 @@ def generate_cnn(app="vgg"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(keras.optimizers.Adam(learning_rate=1e-5), loss=losses, metrics=METRICS)
+    model.compile('adagrad', loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
