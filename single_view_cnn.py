@@ -179,29 +179,32 @@ def generate_cnn(app="vgg"):
         preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
         x = net(preprocessed)
 
-    elif app == "light":
-        x = keras.layers.Conv2D(32, 3, padding='same', activation='relu')(inputs)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.Conv2D(32, 5, 3, padding='same', activation='relu')(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
-        x = keras.layers.Dropout(0.25)(x)
+    elif app == "rotationnet":
+        x = keras.layers.Conv2D(96, kernel_size=7, strides=2, padding='valid', activation='relu')(inputs)
+        x = keras.layers.Lambda(tf.nn.local_response_normalization(alpha=0.0005))(x)
+        x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
+        x = keras.layers.Conv2D(256, kernel_size=5, strides=2, padding='valid', activation='relu')(x)
+        x = keras.layers.Lambda(tf.nn.local_response_normalization(alpha=0.0005))(x)
+        x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
+        x = keras.layers.Conv2D(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
+        x = keras.layers.Conv2D(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
+        x = keras.layers.Conv2D(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
+        x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
+        x = keras.layers.Dense(4096, activation='relu')(x)
+        x = keras.layers.Dropout(0.5)(x)
+        x = keras.layers.Dense(4096, activation='relu')(x)
+        x = keras.layers.Dropout(0.5)(x)
 
-        x = keras.layers.Conv2D(32, 3, padding='same', activation='relu')(inputs)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.Conv2D(32, 5, 3, padding='same', activation='relu')(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
-        x = keras.layers.Dropout(0.25)(x)
 
-    x = layers.Flatten()(x)
+    x = layers.Dense(220)(x)
+    x = layers.Dropout(0.5)(x)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(keras.optimizers.Adam(learning_rate=1e-5), loss=losses, metrics=METRICS)
+    model.compile(keras.optimizers.SGD(learning_rate=0.0005, momentum=0.9), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
