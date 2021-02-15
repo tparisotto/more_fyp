@@ -185,7 +185,6 @@ def generate_cnn(app="vgg"):
         x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
         x = keras.layers.Conv2D(256, kernel_size=5, strides=2, padding='same', activation='relu')(x)
         x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.Lambda(tf.nn.local_response_normalization, arguments={'alpha': 0.0005})(x)
         x = keras.layers.MaxPool2D(pool_size=3, strides=2)(x)
         x = keras.layers.Conv2D(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
         x = keras.layers.Conv2D(512, kernel_size=3, strides=1, padding='same', activation='relu')(x)
@@ -205,7 +204,7 @@ def generate_cnn(app="vgg"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(keras.optimizers.SGD(learning_rate=0.0005, momentum=0.9), loss=losses, metrics=METRICS)
+    model.compile(keras.optimizers.Adam(learning_rate=0.0005), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
