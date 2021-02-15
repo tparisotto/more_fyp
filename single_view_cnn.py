@@ -194,8 +194,8 @@ def generate_cnn(app="vgg"):
 
     x = layers.Flatten()(x)
     x = layers.BatchNormalization()(x)
-    x = layers.Dense(128, activation='relu', name='common')
-    x = layers.Dropout(0.5)
+    x = layers.Dense(128, activation='relu', name='common')(x)
+    x = layers.Dropout(0.5)(x)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
