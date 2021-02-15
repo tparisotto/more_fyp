@@ -166,9 +166,9 @@ def generate_cnn(app="vgg"):
 
     elif app == "mobilenet":
         net = keras.applications.MobileNet(include_top=False,
-                                           # weights='imagenet',
+                                           weights='imagenet',
                                            )
-        # net.trainable = False
+        net.trainable = False
         preprocessed = keras.applications.mobilenet.preprocess_input(inputs)
         x = net(preprocessed)
 
@@ -204,6 +204,8 @@ def generate_cnn(app="vgg"):
         x = keras.layers.Dense(4096)(x)
         x = layers.LeakyReLU()(x)
         x = keras.layers.Dropout(0.5)(x)
+
+    x = layers.Flatten()(x)
 
     x_class = keras.layers.Dense(4096)(x)
     x_class = layers.LeakyReLU()(x_class)
