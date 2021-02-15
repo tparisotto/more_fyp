@@ -54,10 +54,10 @@ os.mkdir(MODEL_DIR)
 
 METRICS = [
     keras.metrics.CategoricalAccuracy(name='accuracy'),
-    keras.metrics.BinaryAccuracy(name='binary_accuracy'),
-    keras.metrics.Precision(name='precision'),
-    keras.metrics.Recall(name='recall'),
-    keras.metrics.AUC(name='auc')
+    # keras.metrics.BinaryAccuracy(name='binary_accuracy'),
+    # keras.metrics.Precision(name='precision'),
+    # keras.metrics.Recall(name='recall'),
+    # keras.metrics.AUC(name='auc')
 ]
 
 
@@ -166,7 +166,8 @@ def generate_cnn(app="vgg"):
 
     elif app == "mobilenet":
         net = keras.applications.MobileNet(include_top=False,
-                                           weights='imagenet')
+                                           # weights='imagenet',
+                                           )
         # net.trainable = False
         preprocessed = keras.applications.mobilenet.preprocess_input(inputs)
         x = net(preprocessed)
