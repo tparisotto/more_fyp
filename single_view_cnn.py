@@ -76,8 +76,15 @@ CALLBACKS = [
         mode='min',
         save_best_only=True,
         save_freq='epoch'),
-    tf.keras.callbacks.TensorBoard(log_dir='./logs'),
-    tf.keras.callbacks.LearningRateScheduler(scheduler)
+    # tf.keras.callbacks.LearningRateScheduler(scheduler),
+    tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs/')),
+    tf.keras.callbacks.CSVLogger(os.path.join(MODEL_DIR, 'logs/training_log.csv')),
+    tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
+                                         factor=0.3,
+                                         patience=5,
+                                         verbose=1,
+                                         mode='min',
+                                         min_lr=1e-7),
 ]
 
 
@@ -186,13 +193,16 @@ def generate_cnn(app="vgg"):
         x = keras.layers.Dropout(0.25)(x)
 
     x = layers.Flatten()(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dense(128, activation='relu', name='common')
+    x = layers.Dropout(0.5)
     out_class = layers.Dense(10, activation='softmax', name="class")(x)
     out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile('adagrad', loss=losses, metrics=METRICS)
+    model.compile(keras.optimizers.Adam(learning_rate=1e-5), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 

@@ -9,6 +9,7 @@ import tensorflow as tf
 from tensorflow import keras
 import utility
 from skimage.feature import peak_local_max
+from skimage.measure import shannon_entropy
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
@@ -48,10 +49,14 @@ def normalize3d(vector):
     np_normalized = np_arr / max_val
     return open3d.utility.Vector3dVector(np_normalized)
 
+def custom_parser(string):
+    number = int(string.split("_")[0])
+    return number
 
-def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
-    ViewData.theta = -round(np.rad2deg(rot_xyz[0]))
-    ViewData.phi = round(np.rad2deg(rot_xyz[2]))
+
+def nonblocking_custom_capture(mesh, rot_xyz, last_rot, VIEW_INDEX):
+    ViewData.phi = -round(np.rad2deg(rot_xyz[0]))
+    ViewData.theta = round(np.rad2deg(rot_xyz[2]))
     vis = open3d.visualization.Visualizer()
     vis.create_window(width=224, height=224, visible=False)
 
@@ -73,7 +78,7 @@ def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
     #                                                                                max_bound=np.array([0.5, 0.5, 0.5]))
     vis.add_geometry(mesh)
     vis.poll_events()
-    path = f"{TMP_DIR}/theta_{int(ViewData.theta)}_phi_{int(ViewData.phi)}.png"
+    path = f"{TMP_DIR}/{VIEW_INDEX}_theta_{int(ViewData.theta)}_phi_{int(ViewData.phi)}.png"
     vis.capture_depth_image(path, depth_scale=10000)
     vis.destroy_window()
     image = cv2.imread(path)
@@ -83,32 +88,56 @@ def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
 
 def classify(off_file, entropy_model, classifier):
     os.mkdir(TMP_DIR)
-    mesh = open3d.io.read_triangle_mesh(off_file)
+    # mesh = open3d.io.read_triangle_mesh(off_file)
+    # mesh.vertices = normalize3d(mesh.vertices)
+    # mesh.scale(1 / np.max(mesh.get_max_bound() - mesh.get_min_bound()), center=mesh.get_center())
+    # center = (mesh.get_max_bound() + mesh.get_min_bound()) / 2
+    # mesh = mesh.translate((-center[0], -center[1], -center[2]))
+    # voxel_grid = open3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(input=mesh,
+    #                                                                                voxel_size=ViewData.voxel_size,
+    #                                                                                min_bound=np.array(
+    #                                                                                    [-0.5, -0.5, -0.5]),
+    #                                                                                max_bound=np.array([0.5, 0.5, 0.5]))
+    # voxels = voxel_grid.get_voxels()
+    # grid_size = ViewData.n_voxel
+    # mask = np.zeros((grid_size, grid_size, grid_size))
+    # for vox in voxels:
+    #     mask[vox.grid_index[0], vox.grid_index[1], vox.grid_index[2]] = 1
+    # mask = np.pad(mask, 3, 'constant')
+    # mask = np.resize(mask, (1, mask.shape[0], mask.shape[1], mask.shape[2], 1))
+    # entropies = entropy_model.predict(mask)
+    # entropies.resize((5, 12))
+
+    VIEW_INDEX = 0
+    FILENAME = os.path.join(sys.path[0], args.data)
+    entropy_model = keras.models.load_model('/Users/tommaso/Documents/RUG/ResearchProject/data/entropy_model_v2.h5')
+    mesh = open3d.io.read_triangle_mesh(FILENAME)
     mesh.vertices = normalize3d(mesh.vertices)
     mesh.scale(1 / np.max(mesh.get_max_bound() - mesh.get_min_bound()), center=mesh.get_center())
     center = (mesh.get_max_bound() + mesh.get_min_bound()) / 2
     mesh = mesh.translate((-center[0], -center[1], -center[2]))
     voxel_grid = open3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(input=mesh,
-                                                                                   voxel_size=ViewData.voxel_size,
+                                                                                   voxel_size=1 / 50,
                                                                                    min_bound=np.array(
                                                                                        [-0.5, -0.5, -0.5]),
                                                                                    max_bound=np.array([0.5, 0.5, 0.5]))
     voxels = voxel_grid.get_voxels()
-    grid_size = ViewData.n_voxel
+    grid_size = 50
     mask = np.zeros((grid_size, grid_size, grid_size))
     for vox in voxels:
         mask[vox.grid_index[0], vox.grid_index[1], vox.grid_index[2]] = 1
     mask = np.pad(mask, 3, 'constant')
     mask = np.resize(mask, (1, mask.shape[0], mask.shape[1], mask.shape[2], 1))
-    entropies = entropy_model.predict(mask)
-    entropies.resize((5, 12))
-    coords = peak_local_max(entropies, min_distance=1, exclude_border=False)
+    pred_entropies = entropy_model.predict(mask)
+    pred_entropies = np.resize(pred_entropies, (5, 12))
+
+    coords = peak_local_max(pred_entropies, min_distance=1, exclude_border=False)
     peak_views = []
     for (y, x) in coords:
         peak_views.append((y * 12) + x)
     peak_views = sorted(peak_views)
     fig, ax = plt.subplots(1)
-    image = ax.imshow(entropies, cmap='rainbow')
+    image = ax.imshow(pred_entropies, cmap='rainbow')
     fig.colorbar(image, orientation='horizontal')
     for i in range(len(coords)):
         circle = plt.Circle((coords[i][1], coords[i][0]), radius=0.2, color='black')
@@ -122,7 +151,7 @@ def classify(off_file, entropy_model, classifier):
     print(f"[DEBUG] peak_views : {peak_views}")
     # print(f"[DEBUG] _views-argwhere : {_views}")
 
-    mesh = open3d.io.read_triangle_mesh(off_file)
+    mesh = open3d.io.read_triangle_mesh(FILENAME)
     mesh.vertices = normalize3d(mesh.vertices)
     rotations = []
     for j in range(5):
@@ -137,8 +166,9 @@ def classify(off_file, entropy_model, classifier):
     #     views.append((phi, theta))
     # print(f"[DEBUG] views : {views}")
     last_rotation = (0, 0, 0)
+    VIEW_INDEX = 'view'
     for rot in rotations:
-        nonblocking_custom_capture(mesh, rot, last_rotation)
+        nonblocking_custom_capture(mesh, rot, last_rotation, VIEW_INDEX)
         last_rotation = rot
     views = []
     views_images = []
