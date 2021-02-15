@@ -81,7 +81,7 @@ CALLBACKS = [
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs')),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
                                          factor=0.3,
-                                         patience=5,
+                                         patience=3,
                                          verbose=1,
                                          mode='min',
                                          min_lr=1e-7),
@@ -208,7 +208,7 @@ def generate_cnn(app="vgg"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(keras.optimizers.Adam(learning_rate=0.0005), loss=losses, metrics=METRICS)
+    model.compile(keras.optimizers.Adam(learning_rate=0.001), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
