@@ -73,9 +73,9 @@ def scheduler(epoch, lr):
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=3),
     tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:03d}_loss-{val_loss:.3f}.h5'),
-        monitor='val_loss',
-        mode='min',
+        filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:03d}_acc-{val_view_accuracy:.3f}.h5'),
+        monitor='val_view_accuracy',
+        mode='max',
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs')),
