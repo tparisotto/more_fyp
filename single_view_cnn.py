@@ -167,7 +167,7 @@ def generate_cnn(app="vgg"):
     elif app == "mobilenet":
         net = keras.applications.MobileNet(include_top=False,
                                            weights='imagenet')
-        net.trainable = False
+        net.trainable = True
         preprocessed = keras.applications.mobilenet.preprocess_input(inputs)
         x = net(preprocessed)
 
@@ -200,7 +200,7 @@ def generate_cnn(app="vgg"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(keras.optimizers.Adam(learning_rate=1e-4), loss=losses, metrics=METRICS)
+    model.compile(keras.optimizers.Adam(learning_rate=1e-5), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
