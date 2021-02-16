@@ -209,17 +209,17 @@ def generate_cnn(app="vgg"):
     x = layers.Flatten()(x)
 
     x_class = keras.layers.Dense(4096)(x)
-    x_class = layers.LeakyReLU()(x_class)
+    x_class = layers.ReLU()(x_class)
     x_class = keras.layers.Dropout(0.5)(x_class)
     x_class = keras.layers.Dense(220)(x_class)
-    x_class = layers.LeakyReLU()(x_class)
+    x_class = layers.ReLU()(x_class)
     x_class = layers.Dropout(0.5)(x_class)
 
     x_view = keras.layers.Dense(4096)(x)
-    x_view = layers.LeakyReLU()(x_view)
+    x_view = layers.ReLU()(x_view)
     x_view = keras.layers.Dropout(0.5)(x_view)
     x_view = keras.layers.Dense(220)(x_view)
-    x_view = layers.LeakyReLU()(x_view)
+    x_view = layers.ReLU()(x_view)
     x_view = keras.layers.Dropout(0.5)(x_view)
 
     out_class = layers.Dense(10, activation='softmax', name="class")(x_class)
