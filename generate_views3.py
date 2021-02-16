@@ -26,7 +26,7 @@ import numpy as np
 from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
-parser.add_argument("data", help="Select a directory to generate the views from.")
+parser.add_argument("--data", help="Select a directory to generate the views from.")
 parser.add_argument("--set", help="Subdirectory: 'train' or 'test'.", default='train')
 parser.add_argument("--out", help="Select a desired output directory.", default="./out")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
