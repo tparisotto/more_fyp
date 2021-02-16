@@ -73,9 +73,9 @@ def scheduler(epoch, lr):
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=3),
     tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:03d}_acc-{val_view_accuracy:.3f}.h5'),
-        monitor='val_view_accuracy',
-        mode='max',
+        filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:03d}_acc-{val_loss:.3f}.h5'),
+        monitor='val_loss',
+        mode='min',
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs')),
@@ -151,7 +151,7 @@ def generate_cnn(app="vgg"):
 
     if app == "vgg":
         net = keras.applications.VGG16(include_top=False,
-                                       weights='imagenet',
+                                       # weights='imagenet',
                                        input_tensor=inputs)
         # net.trainable = False
         preprocessed = keras.applications.vgg16.preprocess_input(inputs)
