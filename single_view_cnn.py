@@ -151,9 +151,9 @@ def generate_cnn(app="vgg"):
 
     if app == "vgg":
         net = keras.applications.VGG16(include_top=False,
-                                       # weights='imagenet',
+                                       weights='imagenet',
                                        input_tensor=inputs)
-        # net.trainable = False
+        net.trainable = False
         preprocessed = keras.applications.vgg16.preprocess_input(inputs)
         x = net(preprocessed)
 
