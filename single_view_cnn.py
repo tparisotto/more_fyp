@@ -79,8 +79,8 @@ CALLBACKS = [
         save_best_only=True,
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs')),
-    tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
-                                         factor=0.3,
+    tf.keras.callbacks.ReduceLROnPlateau(monitor='loss',
+                                         factor=0.1,
                                          patience=5,
                                          verbose=1,
                                          mode='min',
@@ -174,7 +174,8 @@ def generate_cnn(app="vgg"):
 
     elif app == "mobilenetv2":
         net = keras.applications.MobileNetV2(include_top=False,
-                                             weights='imagenet')
+                                             # weights='imagenet',
+                                             )
         # net.trainable = False
         preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
         x = net(preprocessed)
