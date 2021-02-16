@@ -265,7 +265,7 @@ def historyplot():
     sns.set_theme(style='darkgrid')
     history = pd.read_csv(args.data)
     history = history.rename(columns={'Unnamed: 0': 'epochs'})
-    history = history[['epochs', 'class_loss', 'val_class_loss']]
+    history = history[['epochs', 'class_recall', 'val_class_recall']]
     print(history.head())
     data_preproc = pd.melt(history, ['epochs'])
     sns.lineplot(x='epochs', y='value', hue='variable', data=data_preproc)
