@@ -210,27 +210,27 @@ def generate_cnn(app="vgg"):
 
     x = layers.Flatten()(x)
 
-    x_class = keras.layers.Dense(4096)(x)
+    # x_class = keras.layers.Dense(4096)(x)
     # x_class = layers.ReLU()(x_class)
     # x_class = keras.layers.Dropout(0.5)(x_class)
     # x_class = keras.layers.Dense(220)(x_class)
-    x_class = layers.ReLU()(x_class)
-    x_class = layers.Dropout(0.5)(x_class)
-
-    x_view = keras.layers.Dense(4096)(x)
+    # x_class = layers.ReLU()(x_class)
+    # x_class = layers.Dropout(0.5)(x_class)
+    #
+    # x_view = keras.layers.Dense(4096)(x)
     # x_view = layers.ReLU()(x_view)
     # x_view = keras.layers.Dropout(0.5)(x_view)
     # x_view = keras.layers.Dense(220)(x_view)
-    x_view = layers.ReLU()(x_view)
-    x_view = keras.layers.Dropout(0.5)(x_view)
+    # x_view = layers.ReLU()(x_view)
+    # x_view = keras.layers.Dropout(0.5)(x_view)
 
-    out_class = layers.Dense(10, activation='softmax', name="class")(x_class)
-    out_view = layers.Dense(60, activation='softmax', name="view")(x_view)
+    out_class = layers.Dense(10, activation='softmax', name="class")(x)
+    out_view = layers.Dense(60, activation='softmax', name="view")(x)
     model = keras.Model(inputs=inputs, outputs=[out_class, out_view])
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(keras.optimizers.Adam(learning_rate=1e-4), loss=losses, metrics=METRICS)
+    model.compile(keras.optimizers.Adam(learning_rate=1e-5), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
