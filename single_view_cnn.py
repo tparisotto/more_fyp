@@ -73,7 +73,7 @@ def scheduler(epoch, lr):
 CALLBACKS = [
     # tf.keras.callbacks.EarlyStopping(patience=3),
     tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:03d}_acc-{val_loss:.3f}.h5'),
+        filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:03d}_loss-{val_loss:.3f}.h5'),
         monitor='val_loss',
         mode='min',
         save_best_only=True,
@@ -176,9 +176,9 @@ def generate_cnn(app="vgg"):
 
     elif app == "mobilenetv2":
         net = keras.applications.MobileNetV2(include_top=False,
-                                             # weights='imagenet',
+                                             weights='imagenet',
                                              )
-        # net.trainable = False
+        net.trainable = False
         preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
         x = net(preprocessed)
 
