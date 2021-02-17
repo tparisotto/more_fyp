@@ -79,12 +79,12 @@ CALLBACKS = [
         save_freq='epoch'),
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs')),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
-                                         factor=0.1,
+                                         factor=0.5,
                                          patience=3,
                                          verbose=1,
                                          mode='min',
-                                         min_lr=1e-9),
-    tf.keras.callbacks.EarlyStopping(patience=4),
+                                         min_lr=1e-8),
+    tf.keras.callbacks.EarlyStopping(patience=5),
     # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 
@@ -156,23 +156,23 @@ def generate_cnn(app="vgg"):
                                        weights='imagenet',
                                        input_tensor=inputs)
         net.trainable = False
-        preprocessed = keras.applications.vgg16.preprocess_input(inputs)
-        x = net(preprocessed)
+        # preprocessed = keras.applications.vgg16.preprocess_input(inputs)
+        x = net(x)
 
     elif app == "efficientnet":
         net = keras.applications.EfficientNetB0(include_top=False,
                                                 weights='imagenet')
         # net.trainable = False
-        preprocessed = keras.applications.efficientnet.preprocess_input(inputs)
-        x = net(preprocessed)
+        # preprocessed = keras.applications.efficientnet.preprocess_input(inputs)
+        x = net(x)
 
     elif app == "mobilenet":
         net = keras.applications.MobileNet(include_top=False,
                                            weights='imagenet',
                                            )
         net.trainable = False
-        preprocessed = keras.applications.mobilenet.preprocess_input(inputs)
-        x = net(preprocessed)
+        # preprocessed = keras.applications.mobilenet.preprocess_input(inputs)
+        x = net(inputs)
 
     elif app == "mobilenetv2":
         net = keras.applications.MobileNetV2(include_top=False,
