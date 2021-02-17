@@ -80,7 +80,7 @@ CALLBACKS = [
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs')),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
                                          factor=0.1,
-                                         patience=1,
+                                         patience=3,
                                          verbose=1,
                                          mode='min',
                                          min_lr=1e-9),
@@ -179,8 +179,8 @@ def generate_cnn(app="vgg"):
                                              weights='imagenet',
                                              )
         net.trainable = False
-        preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
-        x = net(preprocessed)
+        # preprocessed = keras.applications.mobilenet_v2.preprocess_input(inputs)
+        x = net(inputs)
 
     elif app == "vggm":
         x = keras.layers.Conv2D(96, kernel_size=7, strides=2, padding='same', kernel_regularizer='l2')(inputs)
@@ -230,7 +230,7 @@ def generate_cnn(app="vgg"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(keras.optimizers.Adam(learning_rate=1e-4), loss=losses, metrics=METRICS)
+    model.compile(keras.optimizers.Adam(learning_rate=1e-5), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
