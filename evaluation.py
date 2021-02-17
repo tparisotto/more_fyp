@@ -2,10 +2,11 @@ import os
 import sys
 import argparse
 import numpy as np
-import cv2
+# import cv2
 import open3d
 import pandas as pd
 from tensorflow import keras
+import matplotlib.pyplot as plt
 import utility
 from skimage.feature import peak_local_max
 from time import time
@@ -65,11 +66,11 @@ def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
     vis.add_geometry(mesh)
     vis.poll_events()
     path = f"{TMP_DIR}/theta_{int(ViewData.theta)}_phi_{int(ViewData.phi)}.png"
-    vis.capture_depth_image(path, depth_scale=10000)
+    vis.capture_screen_image(path)
     vis.destroy_window()
-    image = cv2.imread(path)
-    result = cv2.normalize(image, image, 0, 255, norm_type=cv2.NORM_MINMAX)
-    cv2.imwrite(path, result)
+    # image = cv2.imread(path)
+    # result = cv2.normalize(image, image, 0, 255, norm_type=cv2.NORM_MINMAX)
+    # cv2.imwrite(path, result)
 
 
 def classify(off_file_path, entropy_model, classifier):
@@ -117,7 +118,8 @@ def classify(off_file_path, entropy_model, classifier):
 
     for file in views_images_dir:
         if '.png' in file:
-            views_images.append(cv2.imread(os.path.join(TMP_DIR, file)))
+            im = plt.imread(os.path.join(TMP_DIR, file))
+            views_images.append(im)
             phi = int(file.split(".")[0].split("_")[-1])
             theta = int(file.split(".")[0].split("_")[-3])
             views.append((theta, phi))
