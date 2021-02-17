@@ -236,6 +236,7 @@ def generate_cnn(app="vgg"):
 
 
 def main():
+    mirrored_strategy = tf.distribute.MirroredStrategy()
     model = generate_cnn(app=args.architecture)
     num_batches = int((NUM_OBJECTS_TRAIN / TRAIN_FILTER) / BATCH_SIZE)
     train_data_gen = dataset_generator_train()
