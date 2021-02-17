@@ -80,11 +80,11 @@ CALLBACKS = [
     tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs')),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='loss',
                                          factor=0.1,
-                                         patience=5,
+                                         patience=1,
                                          verbose=1,
                                          mode='min',
-                                         min_lr=1e-7),
-    # tf.keras.callbacks.EarlyStopping(patience=3),
+                                         min_lr=1e-9),
+    tf.keras.callbacks.EarlyStopping(patience=4),
     # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 
@@ -96,7 +96,7 @@ def data_loader_train():
             idx = np.random.randint(0, NUM_OBJECTS_TRAIN)
             file_path = os.path.join(TRAIN_DATA_PATH, TRAIN_FILES[idx])
             x = cv2.imread(file_path)
-            # x = x / 255.0
+            x = x / 255.0
             # x = x[:, :, 0]
             label_class = TRAIN_FILES[idx].split("_")[0]
             if label_class == 'night':
@@ -118,7 +118,7 @@ def data_loader_test():
             #                                        interpolation='nearest')
             # x = keras.preprocessing.image.img_to_array(x)
             x = cv2.imread(file_path)
-            # x = x / 255.0
+            x = x / 255.0
             # x = x[:, :, 0]
             label_class = TEST_FILES[i].split("_")[0]
             if label_class == 'night':
