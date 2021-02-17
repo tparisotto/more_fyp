@@ -157,14 +157,14 @@ def generate_cnn(app="vgg"):
                                        input_tensor=inputs)
         net.trainable = False
         # preprocessed = keras.applications.vgg16.preprocess_input(inputs)
-        x = net(x)
+        x = net(inputs)
 
     elif app == "efficientnet":
         net = keras.applications.EfficientNetB0(include_top=False,
                                                 weights='imagenet')
         # net.trainable = False
         # preprocessed = keras.applications.efficientnet.preprocess_input(inputs)
-        x = net(x)
+        x = net(inputs)
 
     elif app == "mobilenet":
         net = keras.applications.MobileNet(include_top=False,
