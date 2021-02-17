@@ -61,17 +61,16 @@ METRICS = [
 ]
 
 
-def scheduler(epoch, lr):
-    if epoch <= 20:
-        return 1e-3
-    elif 20 < epoch <= 50:
-        return 1e-4
-    else:
-        return 1e-5
+# def scheduler(epoch, lr):
+#     if epoch <= 20:
+#         return 1e-3
+#     elif 20 < epoch <= 50:
+#         return 1e-4
+#     else:
+#         return 1e-5
 
 
 CALLBACKS = [
-    # tf.keras.callbacks.EarlyStopping(patience=3),
     tf.keras.callbacks.ModelCheckpoint(
         filepath=os.path.join(MODEL_DIR, 'model_epoch-{epoch:03d}_loss-{val_loss:.3f}.h5'),
         monitor='val_loss',
@@ -85,6 +84,7 @@ CALLBACKS = [
                                          verbose=1,
                                          mode='min',
                                          min_lr=1e-7),
+    # tf.keras.callbacks.EarlyStopping(patience=3),
     # tf.keras.callbacks.LearningRateScheduler(scheduler)
 ]
 
