@@ -2,22 +2,27 @@ import os
 import sys
 import argparse
 import numpy as np
-import cv2
 import open3d
 import pandas as pd
-import tensorflow as tf
 from tensorflow import keras
+import matplotlib.pyplot as plt
 import utility
 from skimage.feature import peak_local_max
-from skimage.measure import shannon_entropy
-import matplotlib.pyplot as plt
+from time import time
+from tqdm import tqdm
+import tempfile
 
 parser = argparse.ArgumentParser()
-parser.add_argument('data')
+parser.add_argument('--data')
 parser.add_argument("--entropy_model")
 parser.add_argument("--classifier_model")
+parser.add_argument("--name")
 args = parser.parse_args()
-TMP_DIR = os.path.join(sys.path[0], "tmp")
+BASE_DIR = sys.path[0]
+DATA_PATH = os.path.join(BASE_DIR, args.data)
+TIMESTAMP = utility.get_datastamp()
+tmp = tempfile.mkdtemp()
+TMP_DIR = os.path.join(BASE_DIR, tmp)
 
 
 class ViewData:
@@ -30,6 +35,9 @@ class ViewData:
     n_voxel = 50
 
 
+CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
+           'monitor', 'night_stand', 'sofa', 'table', 'toilet']
+
 idx2rot = {}
 count = 0
 for _phi in range(30, 151, 30):
@@ -38,16 +46,12 @@ for _phi in range(30, 151, 30):
         count += 1
 
 
+
 def normalize3d(vector):
     np_arr = np.asarray(vector)
     max_val = np.max(np_arr)
     np_normalized = np_arr / max_val
     return open3d.utility.Vector3dVector(np_normalized)
-
-
-def custom_parser(string):
-    number = int(string.split("_")[0])
-    return number
 
 
 def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
@@ -69,8 +73,7 @@ def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
 
 
 def classify(off_file, entropy_model, classifier):
-    os.mkdir(TMP_DIR)
-    FILENAME = os.path.join(sys.path[0], off_file)
+    FILENAME = off_file
     mesh = open3d.io.read_triangle_mesh(FILENAME)
     mesh.vertices = normalize3d(mesh.vertices)
     mesh.scale(1 / np.max(mesh.get_max_bound() - mesh.get_min_bound()), center=mesh.get_center())
@@ -95,21 +98,6 @@ def classify(off_file, entropy_model, classifier):
     for (y, x) in coords:
         peak_views.append((y * 12) + x)
     peak_views = sorted(peak_views)
-    fig, ax = plt.subplots(1)
-    image = ax.imshow(pred_entropies, cmap='rainbow')
-    fig.colorbar(image, orientation='horizontal')
-    for i in range(len(coords)):
-        circle = plt.Circle((coords[i][1], coords[i][0]), radius=0.2, color='black')
-        ax.add_patch(circle)
-
-    plt.xticks([i for i in range(12)], [i * 30 for i in range(12)])
-    plt.yticks([i for i in range(5)], [(i + 1) * 30 for i in range(5)])
-    plt.show()
-
-    # print(f"[DEBUG] peak_views : {np.shape(peak_views)}")
-    print(f"[DEBUG] peak_views : {peak_views}")
-    # print(f"[DEBUG] _views-argwhere : {_views}")
-
     mesh = open3d.io.read_triangle_mesh(FILENAME)
     mesh.vertices = normalize3d(mesh.vertices)
     mesh.compute_vertex_normals()
@@ -125,33 +113,20 @@ def classify(off_file, entropy_model, classifier):
     views = []
     views_images = []
     views_images_dir = os.listdir(TMP_DIR)
-    i = 0
     for file in views_images_dir:
         if '.png' in file:
-            i = i + 1
-            plt.subplot(int(np.ceil(len(rotations) / 3)), 3, i)
             im = plt.imread(os.path.join(TMP_DIR, file))
             views_images.append(im)
             phi = int(file.split(".")[0].split("_")[-1])
             theta = int(file.split(".")[0].split("_")[-3])
-            plt.imshow(im, cmap='gray')
-            plt.title(label=f'({theta:.2f}, {phi:.2f})')
-            plt.xticks([])
-            plt.yticks([])
-
             views.append((theta, phi))
-
     views_images = np.array(views_images)
-    plt.show()
-
     results = classifier.predict(views_images)
     labels = results[0]
     pred_views = results[1]
     for im in os.listdir(TMP_DIR):
         os.remove(os.path.join(TMP_DIR, im))
-    os.rmdir(TMP_DIR)
     return labels, pred_views, views
-
 
 def most_common(lst):
     return max(set(lst), key=lst.count)
@@ -167,34 +142,57 @@ def mode_rows(a):
 
 
 def main():
+    os.mkdir(TMP_DIR)
     print(f"[INFO] Loading models...")
     entropy_model = keras.models.load_model(args.entropy_model)
     classifier = keras.models.load_model(args.classifier_model)
     print(f"[INFO] Models loaded.")
-    x = args.data
-    labels, pred_views, views = classify(x, entropy_model, classifier)
     vec2lab = utility.get_label_dict(inverse=True)
-    for i in range(len(labels)):
-        cl = vec2lab[np.argmax(labels[i])]
-        pv = idx2rot[int(np.argmax(pred_views[i]))]
-        tv = views[i]
-        print(
-            f"[INFO] Predicted: {cl:<11} - {str(pv):<10} from {str(tv):<10} --> Offset: ({(np.array(pv) - np.array(tv))[0]}, "
-            f"{(np.array(pv) - np.array(tv))[1]})")
-    print(f"[INFO] Majority vote:")
-    labint = []
-    for el in labels:
-        labint.append(np.argmax(el))
-    print(f"    class: {vec2lab[most_common(labint)]}")
-    angles = []
-    pred_angles = []
-    for i in range(len(labels)):
-        angles.append(views[i])
-        pred_angles.append(idx2rot[int(np.argmax(pred_views[i]))])
-    angles = np.array(angles)
-    pred_angles = np.array(pred_angles)
-    offset = mode_rows(pred_angles - angles)
-    print(f"    offset: theta={offset[0]} phi={offset[1]}")
+    FIRST_OBJECT = True
+    for lab in CLASSES:
+        test_files = sorted(os.listdir(os.path.join(BASE_DIR, DATA_PATH, lab, 'test')))
+        object_index, labels_true, labels_pred, offset_phi, offset_theta = [], [], [], [], []
+        for x in tqdm(test_files):
+            if '.off' in x:
+                x = os.path.join(BASE_DIR, DATA_PATH, lab, 'test', x)
+                labels, pred_views, views = classify(x, entropy_model, classifier)
+                for i in range(len(labels)):
+                    cl = vec2lab[np.argmax(labels[i])]
+                    pv = idx2rot[int(np.argmax(pred_views[i]))]
+                    tv = views[i]
+                labint = []
+                for el in labels:
+                    labint.append(np.argmax(el))
+                pred_class = vec2lab[most_common(labint)]
+                angles = []
+                pred_angles = []
+                for i in range(len(labels)):
+                    angles.append(views[i])
+                    pred_angles.append(idx2rot[int(np.argmax(pred_views[i]))])
+                angles = np.array(angles)
+                pred_angles = np.array(pred_angles)
+                offset = mode_rows(pred_angles - angles)
+
+                object_index.append(x.rstrip(".off").split("_")[-1])
+                labels_true.append(lab)
+                labels_pred.append(pred_class)
+                offset_theta.append(offset[0])
+                offset_phi.append(offset[1])
+
+        csv = pd.DataFrame({"true_label": labels_true,
+                            "object_index": object_index,
+                            "pred_label": labels_pred,
+                            "offset_theta": offset_theta,
+                            "offset_phi": offset_phi})
+
+        if FIRST_OBJECT:  # Create the main DataFrame and csv, next ones will be appended
+            FIRST_OBJECT = False
+            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{args.name}.csv"), index=False)
+        else:
+            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{args.name}.csv"), index=False, mode='a',
+                       header=False)
+
+    os.rmdir(TMP_DIR)
 
 
 if __name__ == '__main__':

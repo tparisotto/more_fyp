@@ -54,8 +54,8 @@ def normalize3d(vector):
 
 
 def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
-    ViewData.theta = -round(np.rad2deg(rot_xyz[0]))
-    ViewData.phi = round(np.rad2deg(rot_xyz[2]))
+    ViewData.phi = -round(np.rad2deg(rot_xyz[0]))
+    ViewData.theta = round(np.rad2deg(rot_xyz[2]))
     vis = open3d.visualization.Visualizer()
     vis.create_window(width=224, height=224, visible=False)
     # Rotate back from last rotation
@@ -96,7 +96,6 @@ def classify(off_file_path, entropy_model, classifier):
     for (y, x) in coords:
         peak_views.append((y * 12) + x)
     peak_views = sorted(peak_views)
-
     mesh = open3d.io.read_triangle_mesh(off_file_path)
     mesh.vertices = normalize3d(mesh.vertices)
     mesh.compute_vertex_normals()
