@@ -23,6 +23,7 @@ parser.add_argument("-a", "--architecture", default="vgg",
                     choices=['efficientnet', 'vgg', 'mobilenet', 'mobilenetv2', 'vggm'])
 parser.add_argument("-o", "--out", default="./")
 parser.add_argument("--load_model")
+parser.add_argument("--lr")
 args = parser.parse_args()
 
 EPOCHS = args.epochs
@@ -230,7 +231,7 @@ def generate_cnn(app="vgg"):
     model.summary()
     losses = {"class": 'categorical_crossentropy',
               "view": 'categorical_crossentropy'}
-    model.compile(keras.optimizers.Adam(learning_rate=1e-5), loss=losses, metrics=METRICS)
+    model.compile(keras.optimizers.Adam(learning_rate=args.lr), loss=losses, metrics=METRICS)
     # keras.utils.plot_model(model, "net_structure.png", show_shapes=True, expand_nested=True)
     return model
 
