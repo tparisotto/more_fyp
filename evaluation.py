@@ -2,7 +2,6 @@ import os
 import sys
 import argparse
 import numpy as np
-# import cv2
 import open3d
 import pandas as pd
 from tensorflow import keras
@@ -37,8 +36,8 @@ CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
 
 idx2rot = {}
 count = 0
-for _theta in range(30, 151, 30):
-    for _phi in range(0, 331, 30):
+for _phi in range(30, 151, 30):
+    for _theta in range(0, 331, 30):
         idx2rot[count] = (_theta, _phi)
         count += 1
 
@@ -68,9 +67,7 @@ def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
     path = f"{TMP_DIR}/theta_{int(ViewData.theta)}_phi_{int(ViewData.phi)}.png"
     vis.capture_screen_image(path)
     vis.destroy_window()
-    # image = cv2.imread(path)
-    # result = cv2.normalize(image, image, 0, 255, norm_type=cv2.NORM_MINMAX)
-    # cv2.imwrite(path, result)
+
 
 
 def classify(off_file_path, entropy_model, classifier):
@@ -102,6 +99,7 @@ def classify(off_file_path, entropy_model, classifier):
 
     mesh = open3d.io.read_triangle_mesh(off_file_path)
     mesh.vertices = normalize3d(mesh.vertices)
+    mesh.compute_vertex_normals()
     rotations = []
     for j in range(5):
         for i in range(12):
