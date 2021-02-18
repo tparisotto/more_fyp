@@ -142,7 +142,6 @@ def mode_rows(a):
 
 
 def main():
-    os.mkdir(TMP_DIR)
     print(f"[INFO] Loading models...")
     entropy_model = keras.models.load_model(args.entropy_model)
     classifier = keras.models.load_model(args.classifier_model)
