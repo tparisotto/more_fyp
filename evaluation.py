@@ -19,7 +19,7 @@ args = parser.parse_args()
 BASE_DIR = sys.path[0]
 DATA_PATH = os.path.join(BASE_DIR, args.data)
 TMP_DIR = os.path.join(BASE_DIR, "tmp")
-
+TIMESTAMP = utility.get_datastamp()
 
 class ViewData:
     obj_label = ''
@@ -188,9 +188,9 @@ def main():
 
         if FIRST_OBJECT:  # Create the main DataFrame and csv, next ones will be appended
             FIRST_OBJECT = False
-            csv.to_csv(os.path.join(BASE_DIR, "evaluation_results.csv"), index=False)
+            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{TIMESTAMP}.csv"), index=False)
         else:
-            csv.to_csv(os.path.join(BASE_DIR, "evaluation_results.csv"), index=False, mode='a', header=False)
+            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{TIMESTAMP}.csv"), index=False, mode='a', header=False)
 
 
 if __name__ == '__main__':
