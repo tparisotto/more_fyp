@@ -19,8 +19,9 @@ parser.add_argument("--name")
 args = parser.parse_args()
 BASE_DIR = sys.path[0]
 DATA_PATH = os.path.join(BASE_DIR, args.data)
-TMP_DIR = os.path.join(BASE_DIR, "tmp")
 TIMESTAMP = utility.get_datastamp()
+TMP_DIR = os.path.join(BASE_DIR, f"tmp_{TIMESTAMP}")
+
 
 class ViewData:
     obj_label = ''
@@ -70,9 +71,7 @@ def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
     vis.destroy_window()
 
 
-
 def classify(off_file_path, entropy_model, classifier):
-    os.mkdir(TMP_DIR)
     mesh = open3d.io.read_triangle_mesh(off_file_path)
     mesh.vertices = normalize3d(mesh.vertices)
     mesh.scale(1 / np.max(mesh.get_max_bound() - mesh.get_min_bound()), center=mesh.get_center())
@@ -129,7 +128,6 @@ def classify(off_file_path, entropy_model, classifier):
     pred_views = results[1]
     for im in os.listdir(TMP_DIR):
         os.remove(os.path.join(TMP_DIR, im))
-    os.rmdir(TMP_DIR)
     return labels, pred_views, views
 
 
@@ -147,6 +145,7 @@ def mode_rows(a):
 
 
 def main():
+    os.mkdir(TMP_DIR)
     entropy_model = keras.models.load_model(args.entropy_model)
     classifier = keras.models.load_model(args.classifier_model)
     FIRST_OBJECT = True
@@ -191,7 +190,9 @@ def main():
             FIRST_OBJECT = False
             csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{args.name}.csv"), index=False)
         else:
-            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{args.name}.csv"), index=False, mode='a', header=False)
+            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{args.name}.csv"), index=False, mode='a',
+                       header=False)
+    os.rmdir(TMP_DIR)
 
 
 if __name__ == '__main__':
