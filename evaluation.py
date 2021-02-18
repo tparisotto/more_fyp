@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data')
 parser.add_argument("--entropy_model")
 parser.add_argument("--classifier_model")
+parser.add_argument("--name")
 args = parser.parse_args()
 BASE_DIR = sys.path[0]
 DATA_PATH = os.path.join(BASE_DIR, args.data)
@@ -188,9 +189,9 @@ def main():
 
         if FIRST_OBJECT:  # Create the main DataFrame and csv, next ones will be appended
             FIRST_OBJECT = False
-            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{TIMESTAMP}.csv"), index=False)
+            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{args.name}.csv"), index=False)
         else:
-            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{TIMESTAMP}.csv"), index=False, mode='a', header=False)
+            csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{args.name}.csv"), index=False, mode='a', header=False)
 
 
 if __name__ == '__main__':
