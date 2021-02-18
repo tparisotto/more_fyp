@@ -176,8 +176,8 @@ def main():
                 object_index.append(x.rstrip(".off").split("_")[-1])
                 labels_true.append(lab)
                 labels_pred.append(majority_class)
-                offset_phi.append(majority_offset[1])
                 offset_theta.append(majority_offset[0])
+                offset_phi.append(majority_offset[1])
                 end = time()
                 # print(f"[INFO] Elapsed time for object: {end-start}")
         csv = pd.DataFrame({"true_label": labels_true,

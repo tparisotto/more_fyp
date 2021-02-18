@@ -273,7 +273,7 @@ def historyplot():
 
 
 def main():
-    historyplot()
+    conf_mat()
 
 
 if __name__ == '__main__':
