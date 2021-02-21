@@ -16,12 +16,12 @@ args = parser.parse_args()
 
 idx2label = {}
 count = 0
-for theta in range(30, 151, 30):
-    for phi in range(0, 331, 30):
+for phi in range(30, 151, 30):
+    for theta in range(0, 331, 30):
         idx2label[count] = (theta, phi)
         count += 1
 
-# TODO: Not sure if the offset as it is calculated here is correct, need to do some math.
+
 
 
 def most_common(lst):
