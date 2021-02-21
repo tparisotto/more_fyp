@@ -1,3 +1,9 @@
+"""
+Generate binary occupancy grid from the ModelNet10 dataset.
+
+Stores the voxelized files from the modelnet10 dataset in .npy
+format, ready to be fed to entropy_model.py
+"""
 import os
 import sys
 import numpy as np
@@ -5,13 +11,13 @@ import open3d as o3d
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', required=True, help='path to modelnet folder')
-parser.add_argument('--out', required=True, help='specify folder to save output')
-parser.add_argument('--n_voxels', default=25, type=int)
+parser.add_argument('--modelnet10', help="Specify root directory to the ModelNet10 dataset.", required=True)
+parser.add_argument('--out', help='Specify folder to save output', default='./voxel_data')
+parser.add_argument('--n_voxels', default=50, type=int)
 args = parser.parse_args()
 
-VOXEL_SIZE = float(1/args.n_voxels)
-DATA_PATH = args.data
+VOXEL_SIZE = float(1 / args.n_voxels)
+DATA_PATH = args.modelnet10
 VOX_DIR = os.path.join(args.out, f"voxel_data_{args.n_voxels}")
 
 labels = []
@@ -47,14 +53,14 @@ for label in labels:
         mesh = o3d.io.read_triangle_mesh(filename)
         mesh.scale(1 / np.max(mesh.get_max_bound() - mesh.get_min_bound()),
                    center=mesh.get_center())
-        center = (mesh.get_max_bound() + mesh.get_min_bound())/2
+        center = (mesh.get_max_bound() + mesh.get_min_bound()) / 2
         mesh = mesh.translate((-center[0], -center[1], -center[2]))
 
         # (1/voxel_size)^3 will be the size of the input of the network, 0.02 results in 50^3=125000
         voxel_grid = o3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(input=mesh, voxel_size=VOXEL_SIZE,
-                                                                                    min_bound=np.array([-0.5, -0.5, -0.5]),
+                                                                                    min_bound=np.array(
+                                                                                        [-0.5, -0.5, -0.5]),
                                                                                     max_bound=np.array([0.5, 0.5, 0.5]))
-        # voxel_grid = o3d.geometry.VoxelGrid.create_dense(origin=[0,0,0], voxel_size=0.02, width=1, height=1, depth=1)
         voxels = voxel_grid.get_voxels()
         grid_size = args.n_voxels
         mask = np.zeros((grid_size, grid_size, grid_size))
@@ -69,14 +75,14 @@ for label in labels:
         mesh = o3d.io.read_triangle_mesh(filename)
         mesh.scale(1 / np.max(mesh.get_max_bound() - mesh.get_min_bound()),
                    center=mesh.get_center())
-        center = (mesh.get_max_bound() + mesh.get_min_bound())/2
+        center = (mesh.get_max_bound() + mesh.get_min_bound()) / 2
         mesh = mesh.translate((-center[0], -center[1], -center[2]))
 
         # (1/voxel_size)^3 will be the size of the input of the network, 0.02 results in 50^3=125000
         voxel_grid = o3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(input=mesh, voxel_size=VOXEL_SIZE,
-                                                                                    min_bound=np.array([-0.5, -0.5, -0.5]),
+                                                                                    min_bound=np.array(
+                                                                                        [-0.5, -0.5, -0.5]),
                                                                                     max_bound=np.array([0.5, 0.5, 0.5]))
-        # voxel_grid = o3d.geometry.VoxelGrid.create_dense(origin=[0,0,0], voxel_size=0.02, width=1, height=1, depth=1)
         voxels = voxel_grid.get_voxels()
         grid_size = args.n_voxels
         mask = np.zeros((grid_size, grid_size, grid_size))

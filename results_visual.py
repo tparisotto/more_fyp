@@ -21,20 +21,6 @@ CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
 TMP_DIR = os.path.join(sys.path[0], 'tmp')
 
 
-def conf_mat():
-    data = pd.read_csv(args.data)
-    lab_enc = preprocessing.LabelEncoder()
-    lab_enc.fit(CLASSES)
-    true_labels = lab_enc.transform(data['true_label'])
-    pred_labels = lab_enc.transform(data['pred_label'])
-    offset_theta = data['offset_theta']
-    offset_phi = data['offset_phi']
-    conf_mat = metrics.confusion_matrix(y_true=true_labels, y_pred=pred_labels, normalize='pred')
-    disp = metrics.ConfusionMatrixDisplay(confusion_matrix=conf_mat, display_labels=CLASSES)
-    disp.plot(cmap='Blues')
-    plt.show()
-
-
 def normalize3d(vector):
     np_arr = np.asarray(vector)
     max_val = np.max(np_arr)
@@ -272,8 +258,89 @@ def historyplot():
     plt.show()
 
 
+def conf_mat():
+    data = pd.read_csv(args.data)
+    lab_enc = preprocessing.LabelEncoder()
+    lab_enc.fit(CLASSES)
+    true_labels = lab_enc.transform(data['true_label'])
+    pred_labels = lab_enc.transform(data['pred_label'])
+    offset_theta = data['offset_theta']
+    offset_phi = data['offset_phi']
+    conf_mat = metrics.confusion_matrix(y_true=true_labels, y_pred=pred_labels, normalize='true')
+    disp = metrics.ConfusionMatrixDisplay(confusion_matrix=conf_mat, display_labels=CLASSES)
+    disp.plot(cmap='Blues')
+    plt.show()
+
+
+def custom_draw_geometry(pcd):
+    # The following code achieves the same effect as:
+    # o3d.visualization.draw_geometries([pcd])
+    vis = open3d.visualization.Visualizer()
+    vis.create_window()
+    for el in pcd:
+        vis.add_geometry(el)
+    vis.run()
+    vis.destroy_window()
+
+def object_show():
+    mesh = open3d.io.read_triangle_mesh(args.data)
+    mesh.vertices = normalize3d(mesh.vertices)
+    mesh.scale(0.95 / np.max(mesh.get_max_bound() - mesh.get_min_bound()), center=mesh.get_center())
+    # center = (mesh.get_max_bound() + mesh.get_min_bound()) / 2
+    mesh = mesh.translate((0.5, 0.5, 0.5))
+    mesh.compute_vertex_normals()
+    points = [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [1, 1, 0],
+        [0, 0, 1],
+        [1, 0, 1],
+        [0, 1, 1],
+        [1, 1, 1],
+    ]
+    lines = [
+        [0, 1],
+        [0, 2],
+        [1, 3],
+        [2, 3],
+        [4, 5],
+        [4, 6],
+        [5, 7],
+        [6, 7],
+        [0, 4],
+        [1, 5],
+        [2, 6],
+        [3, 7],
+    ]
+    colors = [[1, 0, 0] for i in range(len(lines))]
+    line_set = open3d.geometry.LineSet(
+        points=open3d.utility.Vector3dVector(points),
+        lines=open3d.utility.Vector2iVector(lines),
+    )
+    line_set.colors = open3d.utility.Vector3dVector(colors)
+    custom_draw_geometry([line_set, mesh])
+
+
+def acc_score():
+    data = pd.read_csv(args.data)
+    n_objects = data.shape[0]
+    lab_enc = preprocessing.LabelEncoder()
+    lab_enc.fit(CLASSES)
+    true_labels = lab_enc.transform(data['true_label'])
+    pred_labels = lab_enc.transform(data['pred_label'])
+    class_accuracy = metrics.accuracy_score(true_labels, pred_labels)
+
+    correct = 0
+    for index, row in data.iterrows():
+        if row['offset_theta'] == 0 and row['offset_phi'] == 0:
+            correct = correct+1
+
+    print(f'Class Acc.: {class_accuracy} - View Acc.: {correct/n_objects}')
+
+
 def main():
-    conf_mat()
+    acc_score()
 
 
 if __name__ == '__main__':

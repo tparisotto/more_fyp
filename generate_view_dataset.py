@@ -1,34 +1,23 @@
 """
-Generates views regularly positioned on a sphere around the object.
+Generates views regularly positioned on a sphere around the objects.
 
 This implementation renders plain images and depth images of views from
 viewpoints regularly distributed on a specified number rings parallel to the x-y plain,
 spaced vertically on a sphere around the object.
-
-It also generates a csv file with the entropy values of the object views
-alongside the camera spherical coordinates
-
-Open3D Library:
-@article{Zhou2018,
-    author    = {Qian-Yi Zhou and Jaesik Park and Vladlen Koltun},
-    title     = {{Open3D}: {A} Modern Library for {3D} Data Processing},
-    journal   = {arXiv:1801.09847},
-    year      = {2018},
-}
 """
 
-import shutil
 import argparse
 from open3d import *
 import open3d as o3d
 import numpy as np
-# import cv2
+import cv2
+from utility import normalize3d
 from time import time
 
 parser = argparse.ArgumentParser(description="Generates views regularly positioned on a sphere around the object.")
-parser.add_argument("--data", help="Select a directory to generate the views from.")
+parser.add_argument("--modelnet10", help="Specify root directory to the ModelNet10 dataset.")
 parser.add_argument("--set", help="Subdirectory: 'train' or 'test'.", default='train')
-parser.add_argument("--out", help="Select a desired output directory.", default="./out")
+parser.add_argument("--out", help="Select a desired output directory.", default="./view-dataset")
 parser.add_argument("-v", "--verbose", help="Prints current state of the program while executing.", action='store_true')
 parser.add_argument("-x", "--horizontal_split", help="Number of views from a single ring. Each ring is divided in x "
                                                      "splits so each viewpoint is at an angle of multiple of 360/x. "
@@ -49,8 +38,8 @@ parser.add_argument("-y", "--vertical_split", help="Number of horizontal rings. 
 args = parser.parse_args()
 
 BASE_DIR = sys.path[0]
-OUT_DIR = os.path.normpath(os.path.join(BASE_DIR, args.out))
-DATA_PATH = os.path.normpath(os.path.join(BASE_DIR, args.data))
+OUT_DIR = os.path.join(BASE_DIR, args.out)
+DATA_PATH = os.path.join(BASE_DIR, args.modelnet10)
 IMAGE_WIDTH = 224
 IMAGE_HEIGHT = 224
 N_VIEWS_W = args.horizontal_split
@@ -58,6 +47,7 @@ N_VIEWS_H = args.vertical_split
 
 
 class ViewData:
+    """ Class to keep track of attributes of the views. """
     obj_label = ''
     obj_index = 1
     view_index = 0
@@ -67,39 +57,71 @@ class ViewData:
     theta = 0
 
 
-if os.path.exists(os.path.normpath(os.path.join(OUT_DIR, "image"))):
+if os.path.exists(os.path.join(BASE_DIR, OUT_DIR)):
     print("[Error] Folder already exists.")
     exit(0)
 else:
     os.makedirs(os.path.join(OUT_DIR, "image"))
+    os.makedirs(os.path.join(OUT_DIR, "depth"))
 
 
-def normalize3d(vector):
-    np_arr = np.asarray(vector)
-    max_val = np.max(np_arr)
-    np_normalized = np_arr / (2 * max_val)
-    return o3d.utility.Vector3dVector(np_normalized)
+def nonblocking_custom_capture(tr_mesh, rot_xyz, last_rot):
+    """
+        Custom function for Open3D to allow non-blocking capturing on a headless server.
 
+        The function renders a triangle mesh file in a 224x224 window capturing a depth-image
+        and an RGB image-view from the rot_xyz rotation of the object.
+        Stores the images in the ./tmp/ folder.
 
-def nonblocking_custom_capture(pcd, rot_xyz, last_rot):
+        :param tr_mesh: open3d.geometry.TriangleMesh object to render.
+        :param rot_xyz: (x, y, z)-tuple with rotation values.
+        :param last_rot: if the function is being called within a loop of rotations,
+         specify the previous rot_xyz to reposition the object to thee original rotation before
+         applying rot_xyz
+    """
+
     vis = o3d.visualization.Visualizer()
     vis.create_window(width=IMAGE_WIDTH, height=IMAGE_HEIGHT, visible=False)
-    vis.add_geometry(pcd)
+    vis.add_geometry(tr_mesh)
     # Rotate back from last rotation
-    R_0 = pcd.get_rotation_matrix_from_xyz(last_rot)
-    pcd.rotate(np.linalg.inv(R_0), center=pcd.get_center())
+    R_0 = tr_mesh.get_rotation_matrix_from_xyz(last_rot)
+    tr_mesh.rotate(np.linalg.inv(R_0), center=tr_mesh.get_center())
     # Then rotate to the next rotation
-    R = pcd.get_rotation_matrix_from_xyz(rot_xyz)
+    R = tr_mesh.get_rotation_matrix_from_xyz(rot_xyz)
     ViewData.theta = -round(np.rad2deg(rot_xyz[0]))
     ViewData.phi = round(np.rad2deg(rot_xyz[2]))
-    pcd.rotate(R, center=pcd.get_center())
-    vis.update_geometry(pcd)
+    tr_mesh.rotate(R, center=tr_mesh.get_center())
+    vis.update_geometry(tr_mesh)
     vis.poll_events()
     vis.update_renderer()
-    vis.capture_screen_image(
-        "{}/image/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR, ViewData.obj_label, ViewData.obj_index,
-                                                          int(ViewData.theta), int(ViewData.phi), ViewData.view_index))
+    vis.capture_screen_image("{}/image/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
+                                                                               ViewData.obj_label,
+                                                                               ViewData.obj_index,
+                                                                               int(ViewData.theta),
+                                                                               int(ViewData.phi),
+                                                                               ViewData.view_index))
+    vis.capture_depth_image("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
+                                                                              ViewData.obj_label,
+                                                                              ViewData.obj_index,
+                                                                              int(ViewData.theta),
+                                                                              int(ViewData.phi),
+                                                                              ViewData.view_index),
+                                                                              depth_scale=10000)
     vis.destroy_window()
+    depth = cv2.imread("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
+                                                                         ViewData.obj_label,
+                                                                         ViewData.obj_index,
+                                                                         int(ViewData.theta),
+                                                                         int(ViewData.phi),
+                                                                         ViewData.view_index))
+    result = cv2.normalize(depth, depth, 0, 255, norm_type=cv2.NORM_MINMAX)
+    cv2.imwrite("{}/depth/{}_{}_theta_{}_phi_{}_vc_{}.png".format(OUT_DIR,
+                                                                  ViewData.obj_label,
+                                                                  ViewData.obj_index,
+                                                                  int(ViewData.theta),
+                                                                  int(ViewData.phi),
+                                                                  ViewData.view_index),
+                                                                  result)
 
 
 labels = []

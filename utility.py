@@ -3,6 +3,17 @@ from skimage.feature import peak_local_max
 import os
 import shutil
 import datetime
+import open3d as o3d
+
+CLASSES = ['bathtub', 'bed', 'chair', 'desk', 'dresser',
+           'monitor', 'night_stand', 'sofa', 'table', 'toilet']
+
+
+def normalize3d(vector):
+    np_arr = np.asarray(vector)
+    max_val = np.max(np_arr)
+    np_normalized = np_arr / max_val
+    return o3d.utility.Vector3dVector(np_normalized)
 
 
 def int_to_1hot(n, dim):
@@ -46,7 +57,6 @@ def extract_labels(data):
     # plt.show()
 
     return labels
-
 
 
 def get_labels_from_object_views(data):

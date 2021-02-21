@@ -1,3 +1,7 @@
+"""
+Performs prediction of the model on a test set.
+"""
+
 import os
 import sys
 import argparse
@@ -6,10 +10,11 @@ import open3d
 import pandas as pd
 from tensorflow import keras
 import matplotlib.pyplot as plt
-import utility
+from utility import normalize3d, get_datastamp, get_label_dict
 from skimage.feature import peak_local_max
 from time import time
 from tqdm import tqdm
+import tempfile
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data')
@@ -19,11 +24,13 @@ parser.add_argument("--name")
 args = parser.parse_args()
 BASE_DIR = sys.path[0]
 DATA_PATH = os.path.join(BASE_DIR, args.data)
-TIMESTAMP = utility.get_datastamp()
-TMP_DIR = os.path.join(BASE_DIR, f"tmp_{TIMESTAMP}")
+TIMESTAMP = get_datastamp()
+tmp = tempfile.mkdtemp()
+TMP_DIR = os.path.join(BASE_DIR, tmp)
 
 
 class ViewData:
+    """ Class to keep track of attributes of the views. """
     obj_label = ''
     obj_index = 1
     view_index = 0
@@ -43,15 +50,6 @@ for _phi in range(30, 151, 30):
         idx2rot[count] = (_theta, _phi)
         count += 1
 
-vec2lab = utility.get_label_dict(inverse=True)
-
-
-def normalize3d(vector):
-    np_arr = np.asarray(vector)
-    max_val = np.max(np_arr)
-    np_normalized = np_arr / max_val
-    return open3d.utility.Vector3dVector(np_normalized)
-
 
 def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
     ViewData.phi = -round(np.rad2deg(rot_xyz[0]))
@@ -66,37 +64,38 @@ def nonblocking_custom_capture(mesh, rot_xyz, last_rot):
     mesh.rotate(R, center=mesh.get_center())
     vis.add_geometry(mesh)
     vis.poll_events()
-    path = f"{TMP_DIR}/theta_{int(ViewData.theta)}_phi_{int(ViewData.phi)}.png"
+    path = f"{TMP_DIR}/view_theta_{int(ViewData.theta)}_phi_{int(ViewData.phi)}.png"
     vis.capture_screen_image(path)
     vis.destroy_window()
 
 
-def classify(off_file_path, entropy_model, classifier):
-    mesh = open3d.io.read_triangle_mesh(off_file_path)
+def classify(off_file, entropy_model, classifier):
+    FILENAME = off_file
+    mesh = open3d.io.read_triangle_mesh(FILENAME)
     mesh.vertices = normalize3d(mesh.vertices)
     mesh.scale(1 / np.max(mesh.get_max_bound() - mesh.get_min_bound()), center=mesh.get_center())
     center = (mesh.get_max_bound() + mesh.get_min_bound()) / 2
     mesh = mesh.translate((-center[0], -center[1], -center[2]))
     voxel_grid = open3d.geometry.VoxelGrid.create_from_triangle_mesh_within_bounds(input=mesh,
-                                                                                   voxel_size=ViewData.voxel_size,
+                                                                                   voxel_size=1 / 50,
                                                                                    min_bound=np.array(
                                                                                        [-0.5, -0.5, -0.5]),
                                                                                    max_bound=np.array([0.5, 0.5, 0.5]))
     voxels = voxel_grid.get_voxels()
-    grid_size = ViewData.n_voxel
+    grid_size = 50
     mask = np.zeros((grid_size, grid_size, grid_size))
     for vox in voxels:
         mask[vox.grid_index[0], vox.grid_index[1], vox.grid_index[2]] = 1
     mask = np.pad(mask, 3, 'constant')
     mask = np.resize(mask, (1, mask.shape[0], mask.shape[1], mask.shape[2], 1))
-    entropies = entropy_model.predict(mask)
-    entropies.resize((5, 12))
-    coords = peak_local_max(entropies, min_distance=1, exclude_border=False)
+    pred_entropies = entropy_model.predict(mask)
+    pred_entropies = np.resize(pred_entropies, (5, 12))
+    coords = peak_local_max(pred_entropies, min_distance=1, exclude_border=False)
     peak_views = []
     for (y, x) in coords:
         peak_views.append((y * 12) + x)
     peak_views = sorted(peak_views)
-    mesh = open3d.io.read_triangle_mesh(off_file_path)
+    mesh = open3d.io.read_triangle_mesh(FILENAME)
     mesh.vertices = normalize3d(mesh.vertices)
     mesh.compute_vertex_normals()
     rotations = []
@@ -104,7 +103,6 @@ def classify(off_file_path, entropy_model, classifier):
         for i in range(12):
             if ((j * 12) + i) in peak_views:
                 rotations.append((-(j + 1) * np.pi / 6, 0, i * 2 * np.pi / 12))
-
     last_rotation = (0, 0, 0)
     for rot in rotations:
         nonblocking_custom_capture(mesh, rot, last_rotation)
@@ -112,7 +110,6 @@ def classify(off_file_path, entropy_model, classifier):
     views = []
     views_images = []
     views_images_dir = os.listdir(TMP_DIR)
-
     for file in views_images_dir:
         if '.png' in file:
             im = plt.imread(os.path.join(TMP_DIR, file))
@@ -120,7 +117,6 @@ def classify(off_file_path, entropy_model, classifier):
             phi = int(file.split(".")[0].split("_")[-1])
             theta = int(file.split(".")[0].split("_")[-3])
             views.append((theta, phi))
-
     views_images = np.array(views_images)
     results = classifier.predict(views_images)
     labels = results[0]
@@ -144,25 +140,27 @@ def mode_rows(a):
 
 
 def main():
-    os.mkdir(TMP_DIR)
+    print(f"[INFO] Loading models...")
     entropy_model = keras.models.load_model(args.entropy_model)
     classifier = keras.models.load_model(args.classifier_model)
+    print(f"[INFO] Models loaded.")
+    vec2lab = get_label_dict(inverse=True)
     FIRST_OBJECT = True
-
     for lab in CLASSES:
-        test_files = os.listdir(os.path.join(BASE_DIR, DATA_PATH, lab, 'test'))
+        test_files = sorted(os.listdir(os.path.join(BASE_DIR, DATA_PATH, lab, 'test')))
         object_index, labels_true, labels_pred, offset_phi, offset_theta = [], [], [], [], []
         for x in tqdm(test_files):
             if '.off' in x:
-                start = time()
-                # print(f"[INFO] Current Object: {x}")
                 x = os.path.join(BASE_DIR, DATA_PATH, lab, 'test', x)
                 labels, pred_views, views = classify(x, entropy_model, classifier)
-
+                for i in range(len(labels)):
+                    cl = vec2lab[np.argmax(labels[i])]
+                    pv = idx2rot[int(np.argmax(pred_views[i]))]
+                    tv = views[i]
                 labint = []
                 for el in labels:
                     labint.append(np.argmax(el))
-                majority_class = vec2lab[most_common(labint)]
+                pred_class = vec2lab[most_common(labint)]
                 angles = []
                 pred_angles = []
                 for i in range(len(labels)):
@@ -170,15 +168,14 @@ def main():
                     pred_angles.append(idx2rot[int(np.argmax(pred_views[i]))])
                 angles = np.array(angles)
                 pred_angles = np.array(pred_angles)
-                majority_offset = mode_rows(pred_angles - angles)
+                offset = mode_rows(pred_angles - angles)
 
                 object_index.append(x.rstrip(".off").split("_")[-1])
                 labels_true.append(lab)
-                labels_pred.append(majority_class)
-                offset_theta.append(majority_offset[0])
-                offset_phi.append(majority_offset[1])
-                end = time()
-                # print(f"[INFO] Elapsed time for object: {end-start}")
+                labels_pred.append(pred_class)
+                offset_theta.append(offset[0])
+                offset_phi.append(offset[1])
+
         csv = pd.DataFrame({"true_label": labels_true,
                             "object_index": object_index,
                             "pred_label": labels_pred,
@@ -191,6 +188,7 @@ def main():
         else:
             csv.to_csv(os.path.join(BASE_DIR, f"evaluation_results_{args.name}.csv"), index=False, mode='a',
                        header=False)
+
     os.rmdir(TMP_DIR)
 
 

@@ -1,148 +1,175 @@
+"""
+Trains a model for entropy estimation of 3D objects.
+
+Parses prevoxelization.py output as x-data and generate_entropy_dataset.py
+as y-data to train a model that estimates 60 entropy values from (56,56,56)
+occupancy voxel grids.
+"""
 import os
 import sys
 import argparse
 from datetime import datetime
 import numpy as np
 import pandas as pd
-import utility
-import binvox_rw
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Silence warnings
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import utility
+import kerastuner as kt
+from kerastuner.tuners import Hyperband
+from tqdm import tqdm
 
 print(f"Tensorflow v{tf.__version__}\n")
 
-# TODO: The recall is the most important information since it defines how many of the positions it predicted are correct.
-#    try to get the best recall by changing the structure of the network.
-#   It might be necessary to change the format of the voxel data, or even recalibrate the entropies we use to determine
-#   the point of views.
-'''
-http://aguo.us/writings/classify-modelnet.html
-Notes: The Xu and Todorovic paper describes how we should discretize the ModelNet10 data:
-
-Each shape is represented as a set of binary indicators corresponding to 3D voxels of a uniform 3D grid centered on 
-the shape. The indicators take value 1 if the corresponding 3D voxels are occupied by the 3D shape; and 0, 
-otherwise. Hence, each 3D shape is represented by a binary three-dimensional tensor. The grid size is set to 30 x 30 
-x 30 voxels. The shape size is normalized such that a cube of 24 x 24 x 24 voxels fully contains the shape, 
-and the remaining empty voxels serve for padding in all directions around the shape. '''
-
 parser = argparse.ArgumentParser()
-parser.add_argument('-x', '--x_data', type=str, required=True)
-parser.add_argument('-y', '--y_data', type=str, required=True)
+parser.add_argument('--data', required=True)
+parser.add_argument('--csv', required=True)
 parser.add_argument('-b', '--batch_size', type=int, default=8)
 parser.add_argument('-e', '--epochs', type=int, default=5)
-parser.add_argument('-s', '--split', type=float, default=0.9)
-parser.add_argument('--save_model', type=bool, default=True)
-parser.add_argument('--save_history', type=bool, default=True)
+parser.add_argument('--load_model')
+parser.add_argument('--out', default="./")
 args = parser.parse_args()
 
-# X_DATAPATH = '/data/s3866033/fyp/x_data.npy'
-# Y_DATAPATH = '/data/s3866033/fyp/y_data.npy'
-X_DATAPATH = args.x_data
-Y_DATAPATH = args.y_data
 TIMESTAMP = datetime.now().strftime('%d-%m-%H%M')
 BASE_DIR = sys.path[0]
-SPLIT = args.split
+DATA_DIR = os.path.join(BASE_DIR, args.data)
+MODEL_DIR = os.path.join(BASE_DIR, args.out, f"entropy-model")
+
 METRICS = [
-    keras.metrics.TruePositives(name='tp'),
-    keras.metrics.FalsePositives(name='fp'),
-    keras.metrics.TrueNegatives(name='tn'),
-    keras.metrics.FalseNegatives(name='fn'),
-    keras.metrics.BinaryAccuracy(name='accuracy'),
-    keras.metrics.Precision(name='precision'),
-    keras.metrics.Recall(name='recall'),
     keras.metrics.AUC(name='auc'),
+    keras.metrics.MeanSquaredError(name='mse')
 ]
 
+CALLBACKS = [
+    # tf.keras.callbacks.EarlyStopping(patience=3),
+    tf.keras.callbacks.ModelCheckpoint(
+        filepath=os.path.join(MODEL_DIR, 'voxnet-model-checkpoint.h5'),
+        monitor='val_loss',
+        mode='min',
+        save_best_only=True,
+        save_freq='epoch'),
+    tf.keras.callbacks.TensorBoard(log_dir=os.path.join(MODEL_DIR, 'logs/')),
+    tf.keras.callbacks.CSVLogger(os.path.join(MODEL_DIR, 'logs/training_log.csv')),
+    tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
+                                         factor=0.3,
+                                         patience=10,
+                                         verbose=1,
+                                         mode='min',
+                                         min_lr=3e-7),
+]
+CLASSES = utility.CLASSES
 
-def load_data(x_data, y_data):
-    x = np.load(x_data)
-    y = np.load(y_data)
-    num_objects = x.shape[0]
-    input_shape = x.shape[1:]
 
-    xy = list(zip(x, y))
-    np.random.shuffle(xy)
-    x, y = zip(*xy)
-    x = np.array(x)
-    y = np.array(y)
+def load_data(data, csv):
+    x_train, y_train, x_test, y_test = [], [], [], []
+    csv = pd.read_csv(csv)
+    print('[INFO] Loading Data...')
+    for lab in CLASSES:
+        # print(f"[DEBUG] Loading {lab}\n")
+        for file in tqdm(os.listdir(os.path.join(data, lab, 'train'))):
+            if '.npy' in file:
+                _data = np.load(os.path.join(data, lab, 'train', file))
+                padded_data = np.pad(_data, 3, 'constant')
+                x_train.append(padded_data)
+                filename = file.split(".")[0]
+                index = int(filename.split("_")[-1])
+                # print(f"[DEBUG] label, index : {lab}, {index}")
+                subcsv = csv[csv['label'] == lab]
+                entropies = np.array(subcsv[subcsv['object_index'] == index].sort_values(by=['view_code']).entropy)
+                # print(f"[DEBUG] Entropies of {file} : {entropies}")
+                y_train.append(entropies)
 
-    if SPLIT < 0.0 or SPLIT > 1.0:
-        raise argparse.ArgumentTypeError(f"split={SPLIT} not in range [0.0, 1.0]")
-    n_train = int(num_objects * SPLIT)
-    x_train, y_train = x[:n_train], y[:n_train]
-    x_test, y_test = x[n_train:], y[n_train:]
+        for file in tqdm(os.listdir(os.path.join(data, lab, 'test'))):
+            if '.npy' in file:
+                _data = np.load(os.path.join(data, lab, 'test', file))
+                padded_data = np.pad(_data, 3, 'constant')
+                x_test.append(padded_data)
+                filename = file.split(".")[0]
+                index = int(filename.split("_")[-1])
+                # print(f"[DEBUG] label, index : {lab}, {index}")
+                subcsv = csv[csv['label'] == lab]
+                entropies = np.array(subcsv[subcsv['object_index'] == index].sort_values(by=['view_code']).entropy)
+                # print(f"[DEBUG] Entropies of {file} : {entropies}")
+                y_test.append(entropies)
+
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
+
+    xy_train = list(zip(x_train, y_train))
+    np.random.shuffle(xy_train)
+    x_train, y_train = zip(*xy_train)
+
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+
     return x_train, y_train, x_test, y_test
 
 
-# def generate_cnn():
-#     model = keras.models.Sequential()
-#     model.add(layers.Reshape((50, 50, 50, 1), input_shape=(50, 50, 50)))
-#     model.add(layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same'))
-#
-#     model.add(layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same'))
-#     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
-#     model.add(layers.Dropout(0.25))
-#
-#     model.add(layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same'))
-#     model.add(layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same'))
-#     model.add(layers.MaxPooling3D(pool_size=(2, 2, 2)))
-#     model.add(layers.Dropout(0.25))
-#
-#     model.add(layers.Flatten())
-#     model.add(layers.Dense(384, activation='relu'))
-#     model.add(layers.Dropout(0.5))
-#     model.add(layers.Dense(60, activation='sigmoid'))
-#     return model
 def generate_cnn():
-    inputs = keras.Input(shape=(50, 50, 50))
-    x = layers.Reshape(target_shape=(50, 50, 50, 1))(inputs)
+    """
+    Function to generate a Convolutional Neural Network
+    to estimate entropy from (56,56,56) voxel occupancy grids.
 
-    x = layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(48, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
-    # x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.25)(x)
+    :return: Keras.Model
+    """
+    inputs = keras.Input(shape=(56, 56, 56))
+    base = layers.Reshape(target_shape=(56, 56, 56, 1))(inputs)
 
-    x = layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.Conv3D(56, (3, 3, 3), activation='relu', padding='same')(x)
-    x = layers.MaxPooling3D(pool_size=(2, 2, 2))(x)
-    # x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.25)(x)
+    # cnn_a_filters = hp.Int('cnn1_filters', min_value=4, max_value=16, step=4)
+    a = layers.Conv3D(8, (5, 5, 5), activation='relu', padding='same')(base)
+    a = layers.AveragePooling3D(pool_size=(2, 2, 2))(a)
+    a = layers.BatchNormalization()(a)
+    a = layers.Dropout(0.25)(a)
+    a = layers.Flatten()(a)
 
-    x = layers.Flatten()(x)
-    x = layers.Dense(384, activation='relu')(x)
+    # cnn_b_filters = hp.Int('cnn2_filters', min_value=4, max_value=16, step=4)
+    b = layers.Conv3D(8, (3, 3, 3), activation='relu', padding='same')(base)
+    b = layers.AveragePooling3D(pool_size=(2, 2, 2))(b)
+    b = layers.BatchNormalization()(b)
+    b = layers.Dropout(0.25)(b)
+    b = layers.Flatten()(b)
+
+    x = layers.Concatenate(axis=1)([a, b])
+    # dense_units = hp.Int('dense_units', min_value=256, max_value=512, step=64)
+    x = layers.Dense(512, activation='relu')(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.5)(x)
-    outputs = layers.Dense(60, activation='sigmoid')(x)
+    outputs = layers.Dense(60, activation='linear')(x)
 
-    model = keras.Model(inputs=inputs, outputs=outputs, name='voxel_net')
+    model = keras.Model(inputs=inputs, outputs=outputs, name='entronet')
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=5e-5), loss='mae', metrics=['mse'])
+    model.summary()
     return model
 
 
-def compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=False):
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=METRICS)
-    model.build(input_shape=x_train.shape[1:])
-    print(model.summary())
-    history = model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs, validation_split=0.1)
-    results = model.evaluate(x_test, y_test)
-    if save_model:
-        utility.make_dir('./models')
-        model.save(f'./models/{TIMESTAMP}.h5')
-        print(f'[INFO] Model saved to models/{TIMESTAMP}.h5')
-    return history, results
-
-
 def main():
-    x_train, y_train, x_test, y_test = load_data(x_data=X_DATAPATH, y_data=Y_DATAPATH)
+    os.mkdir(MODEL_DIR)
+    x_train, y_train, x_test, y_test = load_data(args.x_data, args.csv)
+
+    ## Uncomment following to perform hyperparameters training.
+    # tuner = Hyperband(generate_cnn,
+    #                   objective=kt.Objective("val_loss", direction="min"),
+    #                   max_epochs=20,
+    #                   factor=3,
+    #                   directory='../../../../data/s3866033/fyp',  # Only admits relative path, for some reason.
+    #                   project_name=f'hyperband_optimization{TIMESTAMP}')
+    # tuner.search(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+    # best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    #
+    # model = tuner.hypermodel.build(best_hps)
+
     model = generate_cnn()
-    history, results = compile_and_fit(model, x_train, y_train, x_test, y_test, save_model=args.save_model)
-    if args.save_history:
-        utility.make_dir('./history')
-        hist_df = pd.DataFrame(history.history)
-        hist_df.to_csv(os.path.join(BASE_DIR, f"history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv"))
-        print(f"[INFO] History saved to history/history_epochs_{args.epochs}_recall_{hist_df['recall'].iloc[-1]:.3}.csv")
+    if args.load_model is not None:
+        model.load_weights(args.load_model)
+        print(f"[INFO] Model {args.load_model} correctly loaded.")
+    history = model.fit(x_train, y_train,
+                        epochs=args.epochs,
+                        batch_size=args.batch_size,
+                        validation_data=(x_test, y_test),
+                        callbacks=CALLBACKS,
+                        shuffle=True)
 
 
 if __name__ == '__main__':

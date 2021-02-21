@@ -1,3 +1,7 @@
+"""
+Script to post-process a set of depth-images.
+"""
+
 import os
 import sys
 import argparse
