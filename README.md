@@ -29,8 +29,6 @@ the respective split.
 [***]
 
 
-
-
 ```
 python entropy_model.py --data <dir> --csv <entropy_dataset>
 ```
